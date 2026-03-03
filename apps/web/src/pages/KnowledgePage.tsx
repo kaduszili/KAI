@@ -215,11 +215,13 @@ function DeleteConfirm({ filename, onConfirm, onCancel, loading }: DeleteConfirm
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 type View = 'list' | 'editor'
+type Tab  = 'files' | 'keywords'
 
 export function KnowledgePage() {
   const qc = useQueryClient()
 
   const [view,        setView]        = useState<View>('list')
+  const [tab,         setTab]         = useState<Tab>('files')
   const [editingFile, setEditingFile] = useState<KnowledgeFile | null>(null)
   const [deletingFile, setDeletingFile] = useState<KnowledgeFile | null>(null)
   const [editorError, setEditorError] = useState<string | null>(null)
@@ -330,6 +332,11 @@ export function KnowledgePage() {
 
   // ─── List view ────────────────────────────────────────────────────────────
 
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'files',    label: 'Files'            },
+    { id: 'keywords', label: 'Blocked Keywords' },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -337,76 +344,100 @@ export function KnowledgePage() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Knowledge</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Markdown files that teach your assistant about your business.
+            Manage your assistant's knowledge and content filters.
           </p>
         </div>
-        <Button onClick={openNew}>
-          <Plus size={15} />
-          New file
-        </Button>
+        {tab === 'files' && (
+          <Button onClick={openNew}>
+            <Plus size={15} />
+            New file
+          </Button>
+        )}
       </div>
 
-      {/* File list */}
-      {filesLoading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-5 h-5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : files.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center rounded-xl border border-dashed border-slate-200 bg-white">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-brand-50 mb-4">
-            <FileText size={20} className="text-brand-600" />
+      {/* Tab bar */}
+      <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={[
+              'px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
+              tab === t.id
+                ? 'bg-white shadow-sm text-slate-900'
+                : 'text-slate-500 hover:text-slate-700',
+            ].join(' ')}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Files tab ──────────────────────────────────────────────────────── */}
+      {tab === 'files' && (
+        filesLoading ? (
+          <div className="flex justify-center py-16">
+            <div className="w-5 h-5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
           </div>
-          <h2 className="text-sm font-semibold text-slate-900 mb-1">No files yet</h2>
-          <p className="text-sm text-slate-500 mb-4 max-w-xs">
-            Add markdown files to give your assistant knowledge about your business.
-          </p>
-          <Button size="sm" onClick={openNew}>
-            <Plus size={14} />
-            Create first file
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {files.map((file) => (
-            <div
-              key={file.id}
-              className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3.5 hover:border-slate-300 transition-colors group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <FileText size={16} className="text-brand-500 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">{file.filename}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {file.content.length.toLocaleString()} chars ·{' '}
-                    {new Date(file.updatedAt).toLocaleDateString()}
-                  </p>
+        ) : files.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center rounded-xl border border-dashed border-slate-200 bg-white">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-brand-50 mb-4">
+              <FileText size={20} className="text-brand-600" />
+            </div>
+            <h2 className="text-sm font-semibold text-slate-900 mb-1">No files yet</h2>
+            <p className="text-sm text-slate-500 mb-4 max-w-xs">
+              Add markdown files to give your assistant knowledge about your business.
+            </p>
+            <Button size="sm" onClick={openNew}>
+              <Plus size={14} />
+              Create first file
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {files.map((file) => (
+              <div
+                key={file.id}
+                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3.5 hover:border-slate-300 transition-colors group"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <FileText size={16} className="text-brand-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900 truncate">{file.filename}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {file.content.length.toLocaleString()} chars ·{' '}
+                      {new Date(file.updatedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => openEdit(file)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => setDeletingFile(file)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => openEdit(file)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  onClick={() => setDeletingFile(file)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )
       )}
 
-      {/* Keyword blocker */}
-      <KeywordBlocker
-        keywords={settings?.blockedKeywords ?? []}
-        onUpdate={handleUpdateKeywords}
-        saving={kwSaving}
-      />
+      {/* ── Blocked Keywords tab ───────────────────────────────────────────── */}
+      {tab === 'keywords' && (
+        <KeywordBlocker
+          keywords={settings?.blockedKeywords ?? []}
+          onUpdate={handleUpdateKeywords}
+          saving={kwSaving}
+        />
+      )}
 
       {/* Delete modal */}
       {deletingFile && (

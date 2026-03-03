@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ThemeConfig, DEFAULT_THEME } from '@kai/shared'
+import { Code } from 'lucide-react'
 import { Button }   from '@/components/ui/button'
 import { Input }    from '@/components/ui/input'
 import { Label }    from '@/components/ui/label'
@@ -259,6 +260,10 @@ export function AppearancePage() {
     setTheme((t) => ({ ...t, chatWindow: { ...t.chatWindow, ...patch } }))
   }
 
+  function setAdvanced(patch: Partial<ThemeConfig['advanced']>) {
+    setTheme((t) => ({ ...t, advanced: { ...t.advanced, ...patch } }))
+  }
+
   // ── Icon upload ────────────────────────────────────────────────────────────
 
   function handleIconFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -428,6 +433,35 @@ export function AppearancePage() {
                   <option value="pill">Pill</option>
                 </select>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Advanced card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Code size={16} className="text-slate-500" />
+                <CardTitle>Advanced</CardTitle>
+              </div>
+              <CardDescription>
+                Write custom CSS to override any widget styles. Rules are scoped to the widget's shadow DOM.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Label htmlFor="custom-css">Custom CSS</Label>
+              <textarea
+                id="custom-css"
+                rows={10}
+                maxLength={5000}
+                value={theme.advanced.customCss}
+                onChange={(e) => setAdvanced({ customCss: e.target.value })}
+                placeholder={`/* Examples:\n.kai-bubble { box-shadow: 0 8px 24px rgba(0,0,0,0.25); }\n.kai-window { border: 2px solid #6366f1; border-radius: 16px; }\n.kai-user-msg { font-weight: 600; } */`}
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 resize-y"
+                spellCheck={false}
+              />
+              <p className="text-xs text-slate-400 text-right tabular-nums">
+                {theme.advanced.customCss.length} / 5 000
+              </p>
             </CardContent>
           </Card>
 

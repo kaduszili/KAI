@@ -1,4 +1,4 @@
-(function(){"use strict";(function(){const g=document.currentScript,M=g==null?void 0:g.dataset.project,H=((g==null?void 0:g.dataset.apiUrl)??"http://localhost:3001").replace(/\/$/,"");if(!M){console.warn("[KAI] Missing data-project attribute.");return}let w=!1,j=!1;const m=[];let x="#6366f1",B="#6366f1",S="#6366f1",C="#f3f4f6",p="AI Assistant",b=null,k,c,r,n,h,u;function W(){return`
+(function(){"use strict";(function(){const g=document.currentScript,j=g==null?void 0:g.dataset.project,N=((g==null?void 0:g.dataset.apiUrl)??"http://localhost:3001").replace(/\/$/,"");if(!j){console.warn("[KAI] Missing data-project attribute.");return}let C=!1,B=!1;const x=[];let k="#6366f1",S="#6366f1",T="#6366f1",E="#f3f4f6",p="AI Assistant",y=null,A="",b,c,s,n,h,u;function F(){return`
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
       :host {
@@ -14,7 +14,7 @@
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        background: ${x};
+        background: ${k};
         border: none;
         cursor: pointer;
         display: flex;
@@ -90,7 +90,7 @@
         height: 11px;
         border-radius: 50%;
         border: 2px solid #fff;
-        background: ${B};
+        background: ${S};
       }
 
       #kai-header-text { flex: 1; min-width: 0; }
@@ -152,7 +152,7 @@
       }
       .kai-msg.user {
         align-self: flex-end;
-        background: ${S};
+        background: ${T};
         color: #fff;
         border-radius: 18px;
         border-bottom-right-radius: 4px;
@@ -160,7 +160,7 @@
       }
       .kai-msg.assistant {
         align-self: flex-start;
-        background: ${C};
+        background: ${E};
         color: #1e293b;
         border-radius: 18px;
         border-bottom-left-radius: 4px;
@@ -176,7 +176,7 @@
       /* ── Typing indicator ────────────────────────────────────────────────── */
       #kai-typing {
         align-self: flex-start;
-        background: ${C};
+        background: ${E};
         padding: 10px 14px;
         border-radius: 18px;
         border-bottom-left-radius: 4px;
@@ -225,7 +225,7 @@
         flex-shrink: 0;
         transition: border-color 0.15s;
       }
-      #kai-input-row:focus-within { border-color: ${x}; }
+      #kai-input-row:focus-within { border-color: ${k}; }
 
       #kai-input {
         flex: 1;
@@ -250,7 +250,7 @@
       }
 
       #kai-send {
-        background: ${x};
+        background: ${k};
         border: none;
         color: #fff;
         border-radius: 50%;
@@ -275,4 +275,4 @@
         border-top: 1px solid #f1f5f9;
         flex-shrink: 0;
       }
-    `}const F='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',G='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',K='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',N='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V5"/><circle cx="12" cy="4" r="1"/><path d="M8 15h.01M12 15h.01M16 15h.01"/></svg>';function _(){const t=document.createElement("div");t.id="kai-widget-host",k=t.attachShadow({mode:"open"});const s=document.createElement("style");s.textContent=W(),k.appendChild(s);const o=document.createElement("div");if(u=document.createElement("button"),u.id="kai-bubble",u.setAttribute("aria-label","Open chat"),b){const d=document.createElement("img");d.src=b,d.alt=p,u.appendChild(d)}else u.innerHTML=F;u.addEventListener("click",P),c=document.createElement("div"),c.id="kai-panel";const e=document.createElement("div");e.id="kai-header";const i=document.createElement("div");i.id="kai-header-avatar";const a=document.createElement("div");if(a.id="kai-header-icon",b){const d=document.createElement("img");d.src=b,d.alt=p,a.appendChild(d)}else a.innerHTML=N;i.appendChild(a);const f=document.createElement("div");f.id="kai-accent-dot",i.appendChild(f);const l=document.createElement("div");l.id="kai-header-text";const A=document.createElement("div");A.id="kai-header-title",A.textContent=p;const L=document.createElement("div");L.id="kai-header-subtitle",L.textContent="AI Assistant",l.appendChild(A),l.appendChild(L);const y=document.createElement("button");y.id="kai-close",y.innerHTML=G,y.setAttribute("aria-label","Close chat"),y.addEventListener("click",P),e.appendChild(i),e.appendChild(l),e.appendChild(y),r=document.createElement("div"),r.id="kai-messages";const $=document.createElement("div");$.id="kai-empty",$.innerHTML=`${N}<p>Ask me anything about ${p}!</p>`,r.appendChild($),h=document.createElement("div"),h.id="kai-typing",h.innerHTML='<div class="kai-dot"></div><div class="kai-dot"></div><div class="kai-dot"></div>',r.appendChild(h);const E=document.createElement("div");E.id="kai-input-row",n=document.createElement("textarea"),n.id="kai-input",n.placeholder="Type a message…",n.rows=1,n.addEventListener("keydown",d=>{d.key==="Enter"&&!d.shiftKey&&(d.preventDefault(),V())}),n.addEventListener("input",()=>{n.style.height="auto",n.style.height=Math.min(n.scrollHeight,100)+"px"});const I=document.createElement("div");I.id="kai-input-actions";const v=document.createElement("button");v.id="kai-send",v.innerHTML=K,v.setAttribute("aria-label","Send message"),v.addEventListener("click",V),I.appendChild(v),E.appendChild(n),E.appendChild(I);const z=document.createElement("div");z.id="kai-footer",z.textContent="Powered by KAI",c.appendChild(e),c.appendChild(r),c.appendChild(E),c.appendChild(z),o.appendChild(u),o.appendChild(c),k.appendChild(o),document.body.appendChild(t)}function P(){w=!w,c.classList.toggle("open",w),w&&setTimeout(()=>n.focus(),150)}function U(){const t=k.getElementById("kai-empty");m.length>0&&t&&t.remove(),r.querySelectorAll(".kai-msg-group, .kai-msg").forEach(o=>o.remove()),m.forEach(o=>{if(o.role==="assistant"){const e=document.createElement("div");e.className="kai-msg-group";const i=document.createElement("div");i.className="kai-msg assistant",i.textContent=o.text,e.appendChild(i);const a=document.createElement("span");a.className="kai-attribution",a.textContent=`${p} · AI · just now`,e.appendChild(a),r.insertBefore(e,h)}else{const e=document.createElement("div");e.className="kai-msg user",e.textContent=o.text,r.insertBefore(e,h)}}),T(j),r.scrollTop=r.scrollHeight}function T(t){j=t,h.classList.toggle("visible",t),t&&(r.scrollTop=r.scrollHeight)}async function V(){var o;const t=n.value.trim();if(!t||j)return;m.push({role:"user",text:t}),n.value="",n.style.height="auto",U(),T(!0);const s=k.getElementById("kai-send");s&&(s.disabled=!0);try{const e=await fetch(`${H}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({projectId:M,message:t})}),i=await e.json();if(e.ok)m.push({role:"assistant",text:((o=i.data)==null?void 0:o.answer)??"(no response)"});else{const a=(i==null?void 0:i.code)??"error",f={blocked:"Sorry, that message contains blocked content.",rate_limited:"You're sending messages too fast. Please wait a moment.",cap_exceeded:"Monthly usage limit reached.",no_api_key:"This assistant is not configured yet."};m.push({role:"assistant",text:f[a]??"Something went wrong. Please try again."})}}catch{m.push({role:"assistant",text:"Could not reach the server. Please try again."})}finally{T(!1),s&&(s.disabled=!1),U(),n.focus()}}async function O(){var t,s,o,e,i;try{const a=await fetch(`${H}/api/widget-config/${M}`);if(a.ok){const{data:f}=await a.json();p=f.projectName??p;const l=f.theme??{};x=((t=l.bubble)==null?void 0:t.backgroundColor)??x,B=((s=l.chatWindow)==null?void 0:s.headerColor)??B,S=((o=l.chatWindow)==null?void 0:o.userMessageColor)??S,C=((e=l.chatWindow)==null?void 0:e.aiMessageColor)??C,b=((i=l.bubble)==null?void 0:i.iconUrl)??null}}catch{}_()}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",O):O()})()})();
+    `}const G='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',K='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',_='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',P='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V5"/><circle cx="12" cy="4" r="1"/><path d="M8 15h.01M12 15h.01M16 15h.01"/></svg>';function Y(){const t=document.createElement("div");t.id="kai-widget-host",b=t.attachShadow({mode:"open"});const d=document.createElement("style");if(d.textContent=F(),b.appendChild(d),A.trim()){const a=document.createElement("style");a.textContent=A,b.appendChild(a)}const o=document.createElement("div");if(u=document.createElement("button"),u.id="kai-bubble",u.setAttribute("aria-label","Open chat"),y){const a=document.createElement("img");a.src=y,a.alt=p,u.appendChild(a)}else u.innerHTML=G;u.addEventListener("click",U),c=document.createElement("div"),c.id="kai-panel";const e=document.createElement("div");e.id="kai-header";const i=document.createElement("div");i.id="kai-header-avatar";const r=document.createElement("div");if(r.id="kai-header-icon",y){const a=document.createElement("img");a.src=y,a.alt=p,r.appendChild(a)}else r.innerHTML=P;i.appendChild(r);const f=document.createElement("div");f.id="kai-accent-dot",i.appendChild(f);const m=document.createElement("div");m.id="kai-header-text";const l=document.createElement("div");l.id="kai-header-title",l.textContent=p;const $=document.createElement("div");$.id="kai-header-subtitle",$.textContent="AI Assistant",m.appendChild(l),m.appendChild($);const v=document.createElement("button");v.id="kai-close",v.innerHTML=K,v.setAttribute("aria-label","Close chat"),v.addEventListener("click",U),e.appendChild(i),e.appendChild(m),e.appendChild(v),s=document.createElement("div"),s.id="kai-messages";const I=document.createElement("div");I.id="kai-empty",I.innerHTML=`${P}<p>Ask me anything about ${p}!</p>`,s.appendChild(I),h=document.createElement("div"),h.id="kai-typing",h.innerHTML='<div class="kai-dot"></div><div class="kai-dot"></div><div class="kai-dot"></div>',s.appendChild(h);const M=document.createElement("div");M.id="kai-input-row",n=document.createElement("textarea"),n.id="kai-input",n.placeholder="Type a message…",n.rows=1,n.addEventListener("keydown",a=>{a.key==="Enter"&&!a.shiftKey&&(a.preventDefault(),O())}),n.addEventListener("input",()=>{n.style.height="auto",n.style.height=Math.min(n.scrollHeight,100)+"px"});const z=document.createElement("div");z.id="kai-input-actions";const w=document.createElement("button");w.id="kai-send",w.innerHTML=_,w.setAttribute("aria-label","Send message"),w.addEventListener("click",O),z.appendChild(w),M.appendChild(n),M.appendChild(z);const H=document.createElement("div");H.id="kai-footer",H.textContent="Powered by KAI",c.appendChild(e),c.appendChild(s),c.appendChild(M),c.appendChild(H),o.appendChild(u),o.appendChild(c),b.appendChild(o),document.body.appendChild(t)}function U(){C=!C,c.classList.toggle("open",C),C&&setTimeout(()=>n.focus(),150)}function V(){const t=b.getElementById("kai-empty");x.length>0&&t&&t.remove(),s.querySelectorAll(".kai-msg-group, .kai-msg").forEach(o=>o.remove()),x.forEach(o=>{if(o.role==="assistant"){const e=document.createElement("div");e.className="kai-msg-group";const i=document.createElement("div");i.className="kai-msg assistant",i.textContent=o.text,e.appendChild(i);const r=document.createElement("span");r.className="kai-attribution",r.textContent=`${p} · AI · just now`,e.appendChild(r),s.insertBefore(e,h)}else{const e=document.createElement("div");e.className="kai-msg user",e.textContent=o.text,s.insertBefore(e,h)}}),L(B),s.scrollTop=s.scrollHeight}function L(t){B=t,h.classList.toggle("visible",t),t&&(s.scrollTop=s.scrollHeight)}async function O(){var o;const t=n.value.trim();if(!t||B)return;x.push({role:"user",text:t}),n.value="",n.style.height="auto",V(),L(!0);const d=b.getElementById("kai-send");d&&(d.disabled=!0);try{const e=await fetch(`${N}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({projectId:j,message:t})}),i=await e.json();if(e.ok)x.push({role:"assistant",text:((o=i.data)==null?void 0:o.answer)??"(no response)"});else{const r=(i==null?void 0:i.code)??"error",f={blocked:"Sorry, that message contains blocked content.",rate_limited:"You're sending messages too fast. Please wait a moment.",cap_exceeded:"Monthly usage limit reached.",no_api_key:"This assistant is not configured yet."};x.push({role:"assistant",text:f[r]??"Something went wrong. Please try again."})}}catch{x.push({role:"assistant",text:"Could not reach the server. Please try again."})}finally{L(!1),d&&(d.disabled=!1),V(),n.focus()}}async function W(){var t,d,o,e,i,r;try{const f=await fetch(`${N}/api/widget-config/${j}`);if(f.ok){const{data:m}=await f.json();p=m.projectName??p;const l=m.theme??{};k=((t=l.bubble)==null?void 0:t.backgroundColor)??k,S=((d=l.chatWindow)==null?void 0:d.headerColor)??S,T=((o=l.chatWindow)==null?void 0:o.userMessageColor)??T,E=((e=l.chatWindow)==null?void 0:e.aiMessageColor)??E,y=((i=l.bubble)==null?void 0:i.iconUrl)??null,A=((r=l.advanced)==null?void 0:r.customCss)??""}}catch{}Y()}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",W):W()})()})();

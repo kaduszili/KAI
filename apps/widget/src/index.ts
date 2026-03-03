@@ -32,6 +32,7 @@ declare const __API_URL__: string
   let aiMsgBg      = '#f3f4f6'
   let projectName  = 'AI Assistant'
   let iconUrl: string | null = null
+  let customCss    = ''
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
 
@@ -343,6 +344,12 @@ declare const __API_URL__: string
     style.textContent = getStyles()
     shadowRoot.appendChild(style)
 
+    if (customCss.trim()) {
+      const customStyle = document.createElement('style')
+      customStyle.textContent = customCss
+      shadowRoot.appendChild(customStyle)
+    }
+
     const root = document.createElement('div')
 
     // ── Bubble FAB ───────────────────────────────────────────────────────────
@@ -590,6 +597,7 @@ declare const __API_URL__: string
         userMsgBg    = theme.chatWindow?.userMessageColor ?? userMsgBg
         aiMsgBg      = theme.chatWindow?.aiMessageColor   ?? aiMsgBg
         iconUrl      = theme.bubble?.iconUrl              ?? null
+        customCss    = theme.advanced?.customCss          ?? ''
       }
     } catch {
       // Use defaults
