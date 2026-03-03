@@ -9,6 +9,8 @@ import { settingsRoutes }     from './routes/settings.js'
 import { chatRoutes }         from './routes/chat.js'
 import { widgetConfigRoutes } from './routes/widgetConfig.js'
 import { statsRoutes }        from './routes/stats.js'
+import { messagesRoutes }     from './routes/messages.js'
+import { superadminRoutes }  from './routes/superadmin.js'
 import { AppError } from './types.js'
 import { logger } from './lib/logger.js'
 import type { HonoVariables } from './types.js'
@@ -38,6 +40,8 @@ app.route('/api/settings',       settingsRoutes)
 app.route('/api/chat',           chatRoutes)
 app.route('/api/widget-config',  widgetConfigRoutes)
 app.route('/api/stats',          statsRoutes)
+app.route('/api/messages',       messagesRoutes)
+app.route('/api/superadmin',     superadminRoutes)
 
 // Health check
 app.get('/health', (c) => c.json({ ok: true, env: process.env.NODE_ENV }))

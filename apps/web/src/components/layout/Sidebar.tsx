@@ -17,6 +17,7 @@ interface NavItem {
   to:    string
   label: string
   icon:  React.ReactNode
+  end?:  boolean
 }
 
 const customerNav: NavItem[] = [
@@ -28,7 +29,7 @@ const customerNav: NavItem[] = [
 ]
 
 const adminNav: NavItem[] = [
-  { to: '/superadmin',        label: 'Overview', icon: <Shield size={16} /> },
+  { to: '/superadmin',        label: 'Overview', icon: <Shield size={16} />, end: true },
   { to: '/superadmin/users',  label: 'Users',    icon: <Users  size={16} /> },
 ]
 
@@ -44,6 +45,7 @@ function NavGroup({ items, label }: { items: NavItem[]; label?: string }) {
         <NavLink
           key={item.to}
           to={item.to}
+          end={item.end}
           className={({ isActive }) =>
             cn(
               'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',

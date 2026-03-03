@@ -8,6 +8,9 @@ import { OnboardingPage }  from '@/pages/OnboardingPage'
 import { KnowledgePage }   from '@/pages/KnowledgePage'
 import { SettingsPage }    from '@/pages/SettingsPage'
 import { AppearancePage }  from '@/pages/AppearancePage'
+import { MessagesPage }    from '@/pages/MessagesPage'
+import { OverviewPage }   from '@/pages/superadmin/OverviewPage'
+import { UsersPage }      from '@/pages/superadmin/UsersPage'
 import { useAuthStore }  from '@/store/auth'
 
 const queryClient = new QueryClient({
@@ -42,12 +45,12 @@ export function App() {
           {/* Protected — AppShell handles auth + onboarding redirect */}
           <Route element={<AppShell />}>
             <Route path="/dashboard"  element={<DashboardPage />} />
-            <Route path="/messages"   element={<PlaceholderPage title="Messages" />} />
+            <Route path="/messages"   element={<MessagesPage />} />
             <Route path="/knowledge"  element={<KnowledgePage />} />
             <Route path="/appearance" element={<AppearancePage />} />
             <Route path="/settings"   element={<SettingsPage />} />
-            <Route path="/superadmin"        element={<PlaceholderPage title="Super Admin" />} />
-            <Route path="/superadmin/users"  element={<PlaceholderPage title="Users" />} />
+            <Route path="/superadmin"        element={<OverviewPage />} />
+            <Route path="/superadmin/users"  element={<UsersPage />} />
           </Route>
 
           {/* Root redirect */}
