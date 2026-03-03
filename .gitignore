@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+*.env.local
+.DS_Store
+*.log
+drizzle/migrations/*.sql
+
+# pnpm
+.pnpm-store/
+
+# build outputs
+apps/web/dist/
+apps/widget/dist/
+public/widget.js
+public/widget.css
