@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { Bot } from 'lucide-react'
+import { Bird } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input }  from '@/components/ui/input'
 import { Label }  from '@/components/ui/label'
@@ -42,9 +42,9 @@ export function RegisterPage() {
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-600">
-            <Bot size={18} className="text-white" />
+            <Bird size={18} className="text-white" />
           </div>
-          <span className="text-xl font-bold text-slate-900">KAI</span>
+          <span className="text-xl font-bold text-slate-900">Bentivi</span>
         </div>
 
         {/* Card */}

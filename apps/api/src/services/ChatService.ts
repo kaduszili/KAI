@@ -102,11 +102,19 @@ export class ChatService {
 
     // ── 7. Build system prompt ────────────────────────────────────────────────
 
+    const errMsgs        = (settings.errorMessages ?? {}) as Record<string, string>
+    const noKnowledgeMsg = errMsgs.noKnowledge?.trim()
+
     const systemParts: string[] = [
       `You are ${project.name}'s AI assistant. Answer questions helpfully and concisely.`,
     ]
     if (settings.systemMessage?.trim()) systemParts.push(settings.systemMessage.trim())
     if (knowledge) systemParts.push(`\n## Knowledge\n\n${knowledge}`)
+    if (noKnowledgeMsg) {
+      systemParts.push(
+        `If you cannot answer a question based on the provided knowledge, respond with exactly: "${noKnowledgeMsg}"`
+      )
+    }
 
     const systemPrompt = systemParts.join('\n\n')
 

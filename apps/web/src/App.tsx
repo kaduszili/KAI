@@ -7,6 +7,7 @@ import { DashboardPage }  from '@/pages/DashboardPage'
 import { OnboardingPage }  from '@/pages/OnboardingPage'
 import { KnowledgePage }   from '@/pages/KnowledgePage'
 import { SettingsPage }    from '@/pages/SettingsPage'
+import { ProfilePage }     from '@/pages/ProfilePage'
 import { AppearancePage }  from '@/pages/AppearancePage'
 import { MessagesPage }    from '@/pages/MessagesPage'
 import { OverviewPage }   from '@/pages/superadmin/OverviewPage'
@@ -49,6 +50,7 @@ export function App() {
             <Route path="/knowledge"  element={<KnowledgePage />} />
             <Route path="/appearance" element={<AppearancePage />} />
             <Route path="/settings"   element={<SettingsPage />} />
+            <Route path="/profile"    element={<ProfilePage />} />
             <Route path="/superadmin"        element={<OverviewPage />} />
             <Route path="/superadmin/users"  element={<UsersPage />} />
           </Route>

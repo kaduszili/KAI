@@ -394,38 +394,53 @@ export function KnowledgePage() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-2">
-            {files.map((file) => (
-              <div
-                key={file.id}
-                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3.5 hover:border-slate-300 transition-colors group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <FileText size={16} className="text-brand-500 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">{file.filename}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {file.content.length.toLocaleString()} chars ·{' '}
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="text-left text-xs font-medium text-slate-500 px-4 py-3">Name</th>
+                  <th className="text-right text-xs font-medium text-slate-500 px-4 py-3 whitespace-nowrap">Characters</th>
+                  <th className="text-right text-xs font-medium text-slate-500 px-4 py-3 whitespace-nowrap">Last updated</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {files.map((file) => (
+                  <tr key={file.id} className="hover:bg-slate-50/60 group">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <FileText size={15} className="text-brand-500 shrink-0" />
+                        <span className="text-sm font-medium text-slate-900 truncate">{file.filename}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right text-slate-500 tabular-nums whitespace-nowrap">
+                      {file.content.length.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-right text-slate-400 whitespace-nowrap">
                       {new Date(file.updatedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => openEdit(file)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => setDeletingFile(file)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => openEdit(file)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => setDeletingFile(file)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )
       )}

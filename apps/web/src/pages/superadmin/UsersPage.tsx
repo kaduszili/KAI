@@ -222,13 +222,13 @@ export function UsersPage() {
             <EmptyState />
           ) : (
             <CardContent className="p-0">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm table-fixed">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                    <th className="text-left text-xs font-medium text-slate-500 px-5 py-3 w-[40%]">
                       User
                     </th>
-                    <th className="text-left text-xs font-medium text-slate-500 px-4 py-3">
+                    <th className="text-left text-xs font-medium text-slate-500 px-4 py-3 w-24">
                       Plan
                     </th>
                     <th className="text-right text-xs font-medium text-slate-500 px-4 py-3 whitespace-nowrap">

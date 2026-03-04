@@ -13,7 +13,7 @@ declare const __API_URL__: string
   const apiUrl    = (script?.dataset.apiUrl ?? __API_URL__).replace(/\/$/, '')
 
   if (!projectId) {
-    console.warn('[KAI] Missing data-project attribute.')
+    console.warn('[Bentivi] Missing data-project attribute.')
     return
   }
 
@@ -27,12 +27,32 @@ declare const __API_URL__: string
 
   // Theme defaults (overridden by widget-config response)
   let bubbleBg     = '#6366f1'
-  let headerAccent = '#6366f1'   // accent dot colour + send button
+  let headerAccent = '#6366f1'
   let userMsgBg    = '#6366f1'
   let aiMsgBg      = '#f3f4f6'
-  let projectName  = 'AI Assistant'
+  let projectName  = 'Bentivi'
   let iconUrl: string | null = null
   let customCss    = ''
+  let errorMessages: Record<string, string> = {}
+
+  // Extended theme vars
+  let fontFamily     = 'system'
+  let colorScheme: 'light' | 'dark' | 'auto' = 'auto'
+  let bubbleShape: 'circle' | 'pill' = 'circle'
+  let bubbleLabel    = 'AI-mode'
+  let backgroundType: 'solid' | 'gradient' = 'solid'
+  let gradientFrom   = '#6366f1'
+  let gradientTo     = '#8b5cf6'
+  let headerLogoUrl: string | null = null
+  let headerTitle    = ''
+  let headerSubtitle = ''
+  let darkHeaderColor      = '#6366f1'
+  let darkUserMessageColor = '#6366f1'
+  let darkAiMessageColor   = '#334155'
+  let welcomeText          = ''
+
+  // Chevron toggle — stores bubble innerHTML while panel is open
+  let originalBubbleHTML = ''
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
 
@@ -42,10 +62,89 @@ declare const __API_URL__: string
   let inputEl:    HTMLTextAreaElement
   let typingEl:   HTMLElement
   let bubbleEl:   HTMLElement
+  let hostEl:     HTMLElement
+
+  // ── CSS helpers ───────────────────────────────────────────────────────────
+
+  const fontDisplayNames: Record<string, string> = {
+    'inter':     'Inter',
+    'roboto':    'Roboto',
+    'open-sans': 'Open Sans',
+    'nunito':    'Nunito',
+  }
+
+  function getFontCss(): string {
+    if (fontFamily === 'system') {
+      return "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    }
+    const name = fontDisplayNames[fontFamily] ?? fontFamily
+    return `'${name}', sans-serif`
+  }
+
+  function getBubbleBgStyle(): string {
+    if (backgroundType === 'gradient') {
+      return `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})`
+    }
+    return bubbleBg
+  }
+
+  // Focus-ring border colour (cannot use gradient for border-color)
+  function getFocusColor(): string {
+    return backgroundType === 'gradient' ? gradientFrom : bubbleBg
+  }
+
+  function getDarkStyles(): string {
+    return `
+      #kai-panel   { background: #1e293b; }
+      #kai-header  { background: #1e293b; border-bottom-color: #334155; }
+      #kai-header-icon { background: #273549; }
+      #kai-header-title    { color: #f8fafc; }
+      #kai-header-subtitle { color: #94a3b8; }
+      #kai-accent-dot      { background: ${darkHeaderColor}; }
+      .kai-msg.user        { background: ${darkUserMessageColor}; }
+      .kai-msg.assistant   { background: ${darkAiMessageColor}; color: #e2e8f0; }
+      .kai-attribution     { color: #64748b; }
+      #kai-messages        { background: #1e293b; }
+      #kai-input-row       { border-color: #334155; }
+      #kai-input           { color: #f1f5f9; }
+      #kai-input::placeholder { color: #64748b; }
+      #kai-footer          { color: #475569; background: #1e293b; border-top-color: #334155; }
+      #kai-close           { color: #64748b; }
+      #kai-close:hover     { background: #334155; color: #94a3b8; }
+      #kai-empty p         { color: #64748b; }
+      .kai-dot             { background: #64748b; }
+      #kai-typing          { background: ${darkAiMessageColor}; }
+    `
+  }
 
   // ── CSS ───────────────────────────────────────────────────────────────────
 
   function getStyles(): string {
+    const bubBlBg      = getBubbleBgStyle()
+    const focusColor   = getFocusColor()
+    const fontCss      = getFontCss()
+
+    // Dark mode block
+    let darkBlock = ''
+    if (colorScheme === 'dark') {
+      darkBlock = getDarkStyles()
+    } else if (colorScheme === 'auto') {
+      darkBlock = `@media (prefers-color-scheme: dark) { ${getDarkStyles()} }`
+    }
+
+    // Pill-shape overrides for bubble
+    const pillStyles = bubbleShape === 'pill' ? `
+      #kai-bubble {
+        width: auto !important;
+        border-radius: 28px !important;
+        padding: 0 18px !important;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+    ` : ''
+
     return `
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -54,7 +153,7 @@ declare const __API_URL__: string
         bottom: 24px;
         right: 24px;
         z-index: 2147483647;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: ${fontCss};
       }
 
       /* ── Bubble FAB ──────────────────────────────────────────────────────── */
@@ -62,7 +161,7 @@ declare const __API_URL__: string
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        background: ${bubbleBg};
+        background: ${bubBlBg};
         border: none;
         cursor: pointer;
         display: flex;
@@ -72,12 +171,14 @@ declare const __API_URL__: string
         transition: transform 0.15s ease, box-shadow 0.15s ease;
         color: #fff;
         overflow: hidden;
+        white-space: nowrap;
       }
       #kai-bubble:hover {
         transform: scale(1.06);
         box-shadow: 0 6px 20px rgba(0,0,0,0.22);
       }
       #kai-bubble img { width: 24px; height: 24px; object-fit: contain; border-radius: 50%; }
+      ${pillStyles}
 
       /* ── Chat panel ──────────────────────────────────────────────────────── */
       #kai-panel {
@@ -101,6 +202,29 @@ declare const __API_URL__: string
         opacity: 1;
         transform: translateY(0) scale(1);
         pointer-events: all;
+      }
+
+      /* ── Mobile full-screen ──────────────────────────────────────────────── */
+      @media (max-width: 640px) {
+        #kai-panel {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          width: 100%;
+          max-height: 100%;
+          height: 100%;
+          border-radius: 0;
+          box-shadow: none;
+          transform: translateY(100%);
+          opacity: 1;
+        }
+        #kai-panel.open {
+          transform: translateY(0);
+          opacity: 1;
+          pointer-events: all;
+        }
       }
 
       /* ── Fin/Intercom-style header (white) ───────────────────────────────── */
@@ -273,7 +397,7 @@ declare const __API_URL__: string
         flex-shrink: 0;
         transition: border-color 0.15s;
       }
-      #kai-input-row:focus-within { border-color: ${bubbleBg}; }
+      #kai-input-row:focus-within { border-color: ${focusColor}; }
 
       #kai-input {
         flex: 1;
@@ -298,7 +422,7 @@ declare const __API_URL__: string
       }
 
       #kai-send {
-        background: ${bubbleBg};
+        background: ${bubBlBg};
         border: none;
         color: #fff;
         border-radius: 50%;
@@ -314,7 +438,7 @@ declare const __API_URL__: string
       #kai-send:disabled { opacity: 0.45; cursor: not-allowed; }
       #kai-send:not(:disabled):hover { filter: brightness(1.1); }
 
-      /* ── "Powered by KAI" footer strip ───────────────────────────────────── */
+      /* ── "Powered by Bentivi" footer strip ──────────────────────────────── */
       #kai-footer {
         text-align: center;
         font-size: 11px;
@@ -323,22 +447,25 @@ declare const __API_URL__: string
         border-top: 1px solid #f1f5f9;
         flex-shrink: 0;
       }
+
+      ${darkBlock}
     `
   }
 
   // ── SVG icons ─────────────────────────────────────────────────────────────
 
-  const chatSVG  = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`
-  const closeSVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
-  const sendSVG  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`
-  const botSVG   = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V5"/><circle cx="12" cy="4" r="1"/><path d="M8 15h.01M12 15h.01M16 15h.01"/></svg>`
+  const birdSVG        = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h.01"/><path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20"/><path d="m20 7 2 .5-2 .5"/><path d="M10 18v3"/><path d="M14 17.75V21"/><path d="M7 18a6 6 0 0 0 3.84-10.61"/></svg>`
+  const closeSVG       = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+  const sendSVG        = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`
+  const botSVG         = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h.01"/><path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20"/><path d="m20 7 2 .5-2 .5"/><path d="M10 18v3"/><path d="M14 17.75V21"/><path d="M7 18a6 6 0 0 0 3.84-10.61"/></svg>`
+  const chevronDownSVG = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`
 
   // ── Build DOM ─────────────────────────────────────────────────────────────
 
   function buildUI() {
-    const host = document.createElement('div')
-    host.id    = 'kai-widget-host'
-    shadowRoot = host.attachShadow({ mode: 'open' })
+    hostEl    = document.createElement('div')
+    hostEl.id = 'kai-widget-host'
+    shadowRoot = hostEl.attachShadow({ mode: 'open' })
 
     const style = document.createElement('style')
     style.textContent = getStyles()
@@ -352,18 +479,45 @@ declare const __API_URL__: string
 
     const root = document.createElement('div')
 
+    // Resolve header display values
+    const displayTitle    = headerTitle.trim()    || projectName
+    const displaySubtitle = headerSubtitle.trim() || 'Bentivi'
+    const headerLogo      = headerLogoUrl !== null ? headerLogoUrl : iconUrl
+
     // ── Bubble FAB ───────────────────────────────────────────────────────────
     bubbleEl = document.createElement('button')
     bubbleEl.id = 'kai-bubble'
     bubbleEl.setAttribute('aria-label', 'Open chat')
-    if (iconUrl) {
-      const img = document.createElement('img')
-      img.src = iconUrl
-      img.alt = projectName
-      bubbleEl.appendChild(img)
+
+    if (bubbleShape === 'pill') {
+      // Pill: icon span + label span
+      const iconSpan = document.createElement('span')
+      iconSpan.style.cssText = 'display:flex;align-items:center;flex-shrink:0'
+      if (iconUrl) {
+        const img = document.createElement('img')
+        img.src = iconUrl
+        img.alt = projectName
+        iconSpan.appendChild(img)
+      } else {
+        iconSpan.innerHTML = birdSVG
+      }
+      const labelSpan = document.createElement('span')
+      labelSpan.textContent = bubbleLabel || 'AI-mode'
+      bubbleEl.appendChild(iconSpan)
+      bubbleEl.appendChild(labelSpan)
     } else {
-      bubbleEl.innerHTML = chatSVG
+      // Circle: icon only
+      if (iconUrl) {
+        const img = document.createElement('img')
+        img.src = iconUrl
+        img.alt = projectName
+        bubbleEl.appendChild(img)
+      } else {
+        bubbleEl.innerHTML = birdSVG
+      }
     }
+
+    originalBubbleHTML = bubbleEl.innerHTML
     bubbleEl.addEventListener('click', togglePanel)
 
     // ── Panel ────────────────────────────────────────────────────────────────
@@ -374,16 +528,15 @@ declare const __API_URL__: string
     const header = document.createElement('div')
     header.id = 'kai-header'
 
-    // Avatar wrapper (icon + accent dot)
     const avatarWrap = document.createElement('div')
     avatarWrap.id = 'kai-header-avatar'
 
     const iconBox = document.createElement('div')
     iconBox.id = 'kai-header-icon'
-    if (iconUrl) {
+    if (headerLogo) {
       const img = document.createElement('img')
-      img.src = iconUrl
-      img.alt = projectName
+      img.src = headerLogo
+      img.alt = displayTitle
       iconBox.appendChild(img)
     } else {
       iconBox.innerHTML = botSVG
@@ -394,22 +547,20 @@ declare const __API_URL__: string
     dot.id = 'kai-accent-dot'
     avatarWrap.appendChild(dot)
 
-    // Text (project name + subtitle)
     const textWrap = document.createElement('div')
     textWrap.id = 'kai-header-text'
 
-    const title = document.createElement('div')
-    title.id          = 'kai-header-title'
-    title.textContent = projectName
+    const titleEl = document.createElement('div')
+    titleEl.id          = 'kai-header-title'
+    titleEl.textContent = displayTitle
 
-    const subtitle = document.createElement('div')
-    subtitle.id          = 'kai-header-subtitle'
-    subtitle.textContent = 'AI Assistant'
+    const subtitleEl = document.createElement('div')
+    subtitleEl.id          = 'kai-header-subtitle'
+    subtitleEl.textContent = displaySubtitle
 
-    textWrap.appendChild(title)
-    textWrap.appendChild(subtitle)
+    textWrap.appendChild(titleEl)
+    textWrap.appendChild(subtitleEl)
 
-    // Close button (minimal, slate/gray)
     const closeBtn = document.createElement('button')
     closeBtn.id        = 'kai-close'
     closeBtn.innerHTML = closeSVG
@@ -424,19 +575,18 @@ declare const __API_URL__: string
     messagesEl = document.createElement('div')
     messagesEl.id = 'kai-messages'
 
-    // Empty state
     const empty = document.createElement('div')
     empty.id = 'kai-empty'
-    empty.innerHTML = `${botSVG}<p>Ask me anything about ${projectName}!</p>`
+    const displayWelcome = welcomeText.trim() || `Ask me anything about ${displayTitle}!`
+    empty.innerHTML = `${botSVG}<p>${displayWelcome}</p>`
     messagesEl.appendChild(empty)
 
-    // Typing indicator — inside messagesEl so insertBefore(el, typingEl) works
     typingEl = document.createElement('div')
     typingEl.id = 'kai-typing'
     typingEl.innerHTML = '<div class="kai-dot"></div><div class="kai-dot"></div><div class="kai-dot"></div>'
     messagesEl.appendChild(typingEl)
 
-    // ── Input row (Fin-style: column, pill border) ───────────────────────────
+    // ── Input row ────────────────────────────────────────────────────────────
     const inputRow = document.createElement('div')
     inputRow.id = 'kai-input-row'
 
@@ -468,7 +618,7 @@ declare const __API_URL__: string
     // ── Footer branding ──────────────────────────────────────────────────────
     const footer = document.createElement('div')
     footer.id          = 'kai-footer'
-    footer.textContent = 'Powered by KAI'
+    footer.textContent = 'Powered by Bentivi'
 
     panelEl.appendChild(header)
     panelEl.appendChild(messagesEl)
@@ -478,7 +628,7 @@ declare const __API_URL__: string
     root.appendChild(bubbleEl)
     root.appendChild(panelEl)
     shadowRoot.appendChild(root)
-    document.body.appendChild(host)
+    document.body.appendChild(hostEl)
   }
 
   // ── Panel toggle ──────────────────────────────────────────────────────────
@@ -486,8 +636,25 @@ declare const __API_URL__: string
   function togglePanel() {
     isOpen = !isOpen
     panelEl.classList.toggle('open', isOpen)
+
     if (isOpen) {
+      // Show chevron-down in bubble while panel is open
+      originalBubbleHTML = bubbleEl.innerHTML
+      bubbleEl.innerHTML = chevronDownSVG
+
+      // Mobile: expand host to full screen so the panel can cover it
+      if (window.innerWidth <= 640) {
+        Object.assign(hostEl.style, { top: '0', left: '0', right: '0', bottom: '0' })
+      }
       setTimeout(() => inputEl.focus(), 150)
+    } else {
+      // Restore original bubble icon
+      bubbleEl.innerHTML = originalBubbleHTML
+
+      // Mobile: collapse host back to corner
+      if (window.innerWidth <= 640) {
+        Object.assign(hostEl.style, { top: '', left: '', right: '' })
+      }
     }
   }
 
@@ -497,24 +664,22 @@ declare const __API_URL__: string
     const empty = shadowRoot.getElementById('kai-empty')
     if (messages.length > 0 && empty) empty.remove()
 
-    // Remove existing rendered messages/groups
     const existing = messagesEl.querySelectorAll('.kai-msg-group, .kai-msg')
     existing.forEach((el) => el.remove())
 
     messages.forEach((msg) => {
       if (msg.role === 'assistant') {
-        // Wrap bubble + attribution in a group div
         const group = document.createElement('div')
         group.className = 'kai-msg-group'
 
         const el = document.createElement('div')
-        el.className  = 'kai-msg assistant'
+        el.className   = 'kai-msg assistant'
         el.textContent = msg.text
         group.appendChild(el)
 
         const attr = document.createElement('span')
         attr.className   = 'kai-attribution'
-        attr.textContent = `${projectName} · AI · just now`
+        attr.textContent = `${headerTitle.trim() || projectName} · AI · just now`
         group.appendChild(attr)
 
         messagesEl.insertBefore(group, typingEl)
@@ -562,13 +727,24 @@ declare const __API_URL__: string
 
       if (!res.ok) {
         const code = json?.code ?? 'error'
-        const errMap: Record<string, string> = {
+        const defaults: Record<string, string> = {
           blocked:      'Sorry, that message contains blocked content.',
           rate_limited: "You're sending messages too fast. Please wait a moment.",
           cap_exceeded: 'Monthly usage limit reached.',
           no_api_key:   'This assistant is not configured yet.',
         }
-        messages.push({ role: 'assistant', text: errMap[code] ?? 'Something went wrong. Please try again.' })
+        const custom: Record<string, string | undefined> = {
+          blocked:      errorMessages.blocked,
+          rate_limited: errorMessages.rateLimited,
+          cap_exceeded: errorMessages.capExceeded,
+          error:        errorMessages.apiError,
+        }
+        const errText =
+          custom[code]?.trim()           ||
+          defaults[code]                 ||
+          errorMessages.default?.trim()  ||
+          'Something went wrong. Please try again.'
+        messages.push({ role: 'assistant', text: errText })
       } else {
         messages.push({ role: 'assistant', text: json.data?.answer ?? '(no response)' })
       }
@@ -591,13 +767,54 @@ declare const __API_URL__: string
         const { data } = await res.json()
         projectName = data.projectName ?? projectName
 
-        const theme  = data.theme ?? {}
-        bubbleBg     = theme.bubble?.backgroundColor     ?? bubbleBg
-        headerAccent = theme.chatWindow?.headerColor      ?? headerAccent
-        userMsgBg    = theme.chatWindow?.userMessageColor ?? userMsgBg
-        aiMsgBg      = theme.chatWindow?.aiMessageColor   ?? aiMsgBg
-        iconUrl      = theme.bubble?.iconUrl              ?? null
-        customCss    = theme.advanced?.customCss          ?? ''
+        const theme  = (data.theme ?? {}) as Record<string, Record<string, unknown>>
+        const b      = (theme.bubble      ?? {}) as Record<string, unknown>
+        const cw     = (theme.chatWindow  ?? {}) as Record<string, unknown>
+        const g      = (theme.global      ?? {}) as Record<string, unknown>
+        const adv    = (theme.advanced     ?? {}) as Record<string, unknown>
+
+        // Existing colour vars
+        bubbleBg     = (b.backgroundColor     as string) ?? bubbleBg
+        headerAccent = (cw.headerColor         as string) ?? headerAccent
+        userMsgBg    = (cw.userMessageColor    as string) ?? userMsgBg
+        aiMsgBg      = (cw.aiMessageColor      as string) ?? aiMsgBg
+        iconUrl      = (b.iconUrl              as string | null) ?? null
+        customCss    = (adv.customCss          as string) ?? ''
+
+        // New extended vars
+        fontFamily     = (g.fontFamily         as string) ?? 'system'
+        colorScheme    = ((cw.colorScheme      as 'light' | 'dark' | 'auto') ?? 'auto')
+        bubbleShape    = ((b.shape             as 'circle' | 'pill') ?? 'circle')
+        bubbleLabel    = (b.label              as string) ?? 'AI-mode'
+        backgroundType = ((b.backgroundType    as 'solid' | 'gradient') ?? 'solid')
+        gradientFrom   = (b.gradientFrom       as string) ?? gradientFrom
+        gradientTo     = (b.gradientTo         as string) ?? gradientTo
+        headerLogoUrl  = (cw.headerLogoUrl     as string | null) ?? null
+        headerTitle    = (cw.headerTitle       as string) ?? ''
+        headerSubtitle = (cw.headerSubtitle    as string) ?? ''
+        darkHeaderColor      = (cw.darkHeaderColor      as string) ?? darkHeaderColor
+        darkUserMessageColor = (cw.darkUserMessageColor as string) ?? darkUserMessageColor
+        darkAiMessageColor   = (cw.darkAiMessageColor   as string) ?? darkAiMessageColor
+        welcomeText          = (cw.welcomeText           as string) ?? ''
+
+        errorMessages  = (data.errorMessages ?? {}) as Record<string, string>
+
+        // Load Google Font if needed
+        if (fontFamily !== 'system') {
+          const fontParams: Record<string, string> = {
+            'inter':     'Inter:wght@400;500;600',
+            'roboto':    'Roboto:wght@400;500;700',
+            'open-sans': 'Open+Sans:wght@400;500;600',
+            'nunito':    'Nunito:wght@400;500;600',
+          }
+          const param = fontParams[fontFamily]
+          if (param) {
+            const link = document.createElement('link')
+            link.rel  = 'stylesheet'
+            link.href = `https://fonts.googleapis.com/css2?family=${param}&display=swap`
+            document.head.appendChild(link)
+          }
+        }
       }
     } catch {
       // Use defaults

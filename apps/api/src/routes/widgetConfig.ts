@@ -24,8 +24,9 @@ router.get('/:projectId', async (c) => {
   return c.json({
     data: {
       projectId,
-      projectName: project.name,
-      theme:       settings?.themeJson ?? {},
+      projectName:   project.name,
+      theme:         settings?.themeJson    ?? {},
+      errorMessages: settings?.errorMessages ?? {},
     },
   })
 })

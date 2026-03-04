@@ -99,6 +99,7 @@ export const projectSettings = pgTable('project_settings', {
   rateLimitPerMinute:    integer('rate_limit_per_minute').notNull().default(20),
   monthlyTokenCap:       integer('monthly_token_cap').notNull().default(500000),
   themeJson:             jsonb('theme_json').notNull().default({}),
+  errorMessages:         jsonb('error_messages').notNull().default({}),
   updatedAt:             timestamp('updated_at').notNull().defaultNow(),
 })
 

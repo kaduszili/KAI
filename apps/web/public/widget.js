@@ -1,4 +1,24 @@
-(function(){"use strict";(function(){const g=document.currentScript,j=g==null?void 0:g.dataset.project,N=((g==null?void 0:g.dataset.apiUrl)??"http://localhost:3001").replace(/\/$/,"");if(!j){console.warn("[KAI] Missing data-project attribute.");return}let C=!1,B=!1;const x=[];let k="#6366f1",S="#6366f1",T="#6366f1",E="#f3f4f6",p="AI Assistant",y=null,A="",b,c,s,n,h,u;function F(){return`
+(function(){"use strict";(function(){const f=document.currentScript,A=f==null?void 0:f.dataset.project,Z=((f==null?void 0:f.dataset.apiUrl)??"http://localhost:3001").replace(/\/$/,"");if(!A){console.warn("[Bentivi] Missing data-project attribute.");return}let S=!1,I=!1;const b=[];let B="#6366f1",z="#6366f1",F="#6366f1",L="#f3f4f6",k="Bentivi",x=null,N="",y={},w="system",U="auto",O="circle",ee="AI-mode",P="solid",$="#6366f1",V="#8b5cf6",W=null,_="",te="",D="#6366f1",G="#6366f1",j="#334155",oe="",Y="",v,u,d,a,m,l,C;const pe={inter:"Inter",roboto:"Roboto","open-sans":"Open Sans",nunito:"Nunito"};function ue(){return w==="system"?"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif":`'${pe[w]??w}', sans-serif`}function he(){return P==="gradient"?`linear-gradient(135deg, ${$}, ${V})`:B}function me(){return P==="gradient"?$:B}function ie(){return`
+      #kai-panel   { background: #1e293b; }
+      #kai-header  { background: #1e293b; border-bottom-color: #334155; }
+      #kai-header-icon { background: #273549; }
+      #kai-header-title    { color: #f8fafc; }
+      #kai-header-subtitle { color: #94a3b8; }
+      #kai-accent-dot      { background: ${D}; }
+      .kai-msg.user        { background: ${G}; }
+      .kai-msg.assistant   { background: ${j}; color: #e2e8f0; }
+      .kai-attribution     { color: #64748b; }
+      #kai-messages        { background: #1e293b; }
+      #kai-input-row       { border-color: #334155; }
+      #kai-input           { color: #f1f5f9; }
+      #kai-input::placeholder { color: #64748b; }
+      #kai-footer          { color: #475569; background: #1e293b; border-top-color: #334155; }
+      #kai-close           { color: #64748b; }
+      #kai-close:hover     { background: #334155; color: #94a3b8; }
+      #kai-empty p         { color: #64748b; }
+      .kai-dot             { background: #64748b; }
+      #kai-typing          { background: ${j}; }
+    `}function ge(){const o=he(),r=me(),i=ue();let e="";return U==="dark"?e=ie():U==="auto"&&(e=`@media (prefers-color-scheme: dark) { ${ie()} }`),`
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
       :host {
@@ -6,7 +26,7 @@
         bottom: 24px;
         right: 24px;
         z-index: 2147483647;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: ${i};
       }
 
       /* ── Bubble FAB ──────────────────────────────────────────────────────── */
@@ -14,7 +34,7 @@
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        background: ${k};
+        background: ${o};
         border: none;
         cursor: pointer;
         display: flex;
@@ -24,12 +44,24 @@
         transition: transform 0.15s ease, box-shadow 0.15s ease;
         color: #fff;
         overflow: hidden;
+        white-space: nowrap;
       }
       #kai-bubble:hover {
         transform: scale(1.06);
         box-shadow: 0 6px 20px rgba(0,0,0,0.22);
       }
       #kai-bubble img { width: 24px; height: 24px; object-fit: contain; border-radius: 50%; }
+      ${O==="pill"?`
+      #kai-bubble {
+        width: auto !important;
+        border-radius: 28px !important;
+        padding: 0 18px !important;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+    `:""}
 
       /* ── Chat panel ──────────────────────────────────────────────────────── */
       #kai-panel {
@@ -53,6 +85,29 @@
         opacity: 1;
         transform: translateY(0) scale(1);
         pointer-events: all;
+      }
+
+      /* ── Mobile full-screen ──────────────────────────────────────────────── */
+      @media (max-width: 640px) {
+        #kai-panel {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          width: 100%;
+          max-height: 100%;
+          height: 100%;
+          border-radius: 0;
+          box-shadow: none;
+          transform: translateY(100%);
+          opacity: 1;
+        }
+        #kai-panel.open {
+          transform: translateY(0);
+          opacity: 1;
+          pointer-events: all;
+        }
       }
 
       /* ── Fin/Intercom-style header (white) ───────────────────────────────── */
@@ -90,7 +145,7 @@
         height: 11px;
         border-radius: 50%;
         border: 2px solid #fff;
-        background: ${S};
+        background: ${z};
       }
 
       #kai-header-text { flex: 1; min-width: 0; }
@@ -152,7 +207,7 @@
       }
       .kai-msg.user {
         align-self: flex-end;
-        background: ${T};
+        background: ${F};
         color: #fff;
         border-radius: 18px;
         border-bottom-right-radius: 4px;
@@ -160,7 +215,7 @@
       }
       .kai-msg.assistant {
         align-self: flex-start;
-        background: ${E};
+        background: ${L};
         color: #1e293b;
         border-radius: 18px;
         border-bottom-left-radius: 4px;
@@ -176,7 +231,7 @@
       /* ── Typing indicator ────────────────────────────────────────────────── */
       #kai-typing {
         align-self: flex-start;
-        background: ${E};
+        background: ${L};
         padding: 10px 14px;
         border-radius: 18px;
         border-bottom-left-radius: 4px;
@@ -225,7 +280,7 @@
         flex-shrink: 0;
         transition: border-color 0.15s;
       }
-      #kai-input-row:focus-within { border-color: ${k}; }
+      #kai-input-row:focus-within { border-color: ${r}; }
 
       #kai-input {
         flex: 1;
@@ -250,7 +305,7 @@
       }
 
       #kai-send {
-        background: ${k};
+        background: ${o};
         border: none;
         color: #fff;
         border-radius: 50%;
@@ -266,7 +321,7 @@
       #kai-send:disabled { opacity: 0.45; cursor: not-allowed; }
       #kai-send:not(:disabled):hover { filter: brightness(1.1); }
 
-      /* ── "Powered by KAI" footer strip ───────────────────────────────────── */
+      /* ── "Powered by Bentivi" footer strip ──────────────────────────────── */
       #kai-footer {
         text-align: center;
         font-size: 11px;
@@ -275,4 +330,6 @@
         border-top: 1px solid #f1f5f9;
         flex-shrink: 0;
       }
-    `}const G='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',K='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',_='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',P='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V5"/><circle cx="12" cy="4" r="1"/><path d="M8 15h.01M12 15h.01M16 15h.01"/></svg>';function Y(){const t=document.createElement("div");t.id="kai-widget-host",b=t.attachShadow({mode:"open"});const d=document.createElement("style");if(d.textContent=F(),b.appendChild(d),A.trim()){const a=document.createElement("style");a.textContent=A,b.appendChild(a)}const o=document.createElement("div");if(u=document.createElement("button"),u.id="kai-bubble",u.setAttribute("aria-label","Open chat"),y){const a=document.createElement("img");a.src=y,a.alt=p,u.appendChild(a)}else u.innerHTML=G;u.addEventListener("click",U),c=document.createElement("div"),c.id="kai-panel";const e=document.createElement("div");e.id="kai-header";const i=document.createElement("div");i.id="kai-header-avatar";const r=document.createElement("div");if(r.id="kai-header-icon",y){const a=document.createElement("img");a.src=y,a.alt=p,r.appendChild(a)}else r.innerHTML=P;i.appendChild(r);const f=document.createElement("div");f.id="kai-accent-dot",i.appendChild(f);const m=document.createElement("div");m.id="kai-header-text";const l=document.createElement("div");l.id="kai-header-title",l.textContent=p;const $=document.createElement("div");$.id="kai-header-subtitle",$.textContent="AI Assistant",m.appendChild(l),m.appendChild($);const v=document.createElement("button");v.id="kai-close",v.innerHTML=K,v.setAttribute("aria-label","Close chat"),v.addEventListener("click",U),e.appendChild(i),e.appendChild(m),e.appendChild(v),s=document.createElement("div"),s.id="kai-messages";const I=document.createElement("div");I.id="kai-empty",I.innerHTML=`${P}<p>Ask me anything about ${p}!</p>`,s.appendChild(I),h=document.createElement("div"),h.id="kai-typing",h.innerHTML='<div class="kai-dot"></div><div class="kai-dot"></div><div class="kai-dot"></div>',s.appendChild(h);const M=document.createElement("div");M.id="kai-input-row",n=document.createElement("textarea"),n.id="kai-input",n.placeholder="Type a message…",n.rows=1,n.addEventListener("keydown",a=>{a.key==="Enter"&&!a.shiftKey&&(a.preventDefault(),O())}),n.addEventListener("input",()=>{n.style.height="auto",n.style.height=Math.min(n.scrollHeight,100)+"px"});const z=document.createElement("div");z.id="kai-input-actions";const w=document.createElement("button");w.id="kai-send",w.innerHTML=_,w.setAttribute("aria-label","Send message"),w.addEventListener("click",O),z.appendChild(w),M.appendChild(n),M.appendChild(z);const H=document.createElement("div");H.id="kai-footer",H.textContent="Powered by KAI",c.appendChild(e),c.appendChild(s),c.appendChild(M),c.appendChild(H),o.appendChild(u),o.appendChild(c),b.appendChild(o),document.body.appendChild(t)}function U(){C=!C,c.classList.toggle("open",C),C&&setTimeout(()=>n.focus(),150)}function V(){const t=b.getElementById("kai-empty");x.length>0&&t&&t.remove(),s.querySelectorAll(".kai-msg-group, .kai-msg").forEach(o=>o.remove()),x.forEach(o=>{if(o.role==="assistant"){const e=document.createElement("div");e.className="kai-msg-group";const i=document.createElement("div");i.className="kai-msg assistant",i.textContent=o.text,e.appendChild(i);const r=document.createElement("span");r.className="kai-attribution",r.textContent=`${p} · AI · just now`,e.appendChild(r),s.insertBefore(e,h)}else{const e=document.createElement("div");e.className="kai-msg user",e.textContent=o.text,s.insertBefore(e,h)}}),L(B),s.scrollTop=s.scrollHeight}function L(t){B=t,h.classList.toggle("visible",t),t&&(s.scrollTop=s.scrollHeight)}async function O(){var o;const t=n.value.trim();if(!t||B)return;x.push({role:"user",text:t}),n.value="",n.style.height="auto",V(),L(!0);const d=b.getElementById("kai-send");d&&(d.disabled=!0);try{const e=await fetch(`${N}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({projectId:j,message:t})}),i=await e.json();if(e.ok)x.push({role:"assistant",text:((o=i.data)==null?void 0:o.answer)??"(no response)"});else{const r=(i==null?void 0:i.code)??"error",f={blocked:"Sorry, that message contains blocked content.",rate_limited:"You're sending messages too fast. Please wait a moment.",cap_exceeded:"Monthly usage limit reached.",no_api_key:"This assistant is not configured yet."};x.push({role:"assistant",text:f[r]??"Something went wrong. Please try again."})}}catch{x.push({role:"assistant",text:"Could not reach the server. Please try again."})}finally{L(!1),d&&(d.disabled=!1),V(),n.focus()}}async function W(){var t,d,o,e,i,r;try{const f=await fetch(`${N}/api/widget-config/${j}`);if(f.ok){const{data:m}=await f.json();p=m.projectName??p;const l=m.theme??{};k=((t=l.bubble)==null?void 0:t.backgroundColor)??k,S=((d=l.chatWindow)==null?void 0:d.headerColor)??S,T=((o=l.chatWindow)==null?void 0:o.userMessageColor)??T,E=((e=l.chatWindow)==null?void 0:e.aiMessageColor)??E,y=((i=l.bubble)==null?void 0:i.iconUrl)??null,A=((r=l.advanced)==null?void 0:r.customCss)??""}}catch{}Y()}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",W):W()})()})();
+
+      ${e}
+    `}const ne='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h.01"/><path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20"/><path d="m20 7 2 .5-2 .5"/><path d="M10 18v3"/><path d="M14 17.75V21"/><path d="M7 18a6 6 0 0 0 3.84-10.61"/></svg>',fe='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',be='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',ae='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h.01"/><path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20"/><path d="m20 7 2 .5-2 .5"/><path d="M10 18v3"/><path d="M14 17.75V21"/><path d="M7 18a6 6 0 0 0 3.84-10.61"/></svg>',ke='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';function xe(){C=document.createElement("div"),C.id="kai-widget-host",v=C.attachShadow({mode:"open"});const o=document.createElement("style");if(o.textContent=ge(),v.appendChild(o),N.trim()){const n=document.createElement("style");n.textContent=N,v.appendChild(n)}const r=document.createElement("div"),i=_.trim()||k,e=te.trim()||"Bentivi",t=W!==null?W:x;if(l=document.createElement("button"),l.id="kai-bubble",l.setAttribute("aria-label","Open chat"),O==="pill"){const n=document.createElement("span");if(n.style.cssText="display:flex;align-items:center;flex-shrink:0",x){const X=document.createElement("img");X.src=x,X.alt=k,n.appendChild(X)}else n.innerHTML=ne;const ce=document.createElement("span");ce.textContent=ee||"AI-mode",l.appendChild(n),l.appendChild(ce)}else if(x){const n=document.createElement("img");n.src=x,n.alt=k,l.appendChild(n)}else l.innerHTML=ne;Y=l.innerHTML,l.addEventListener("click",re),u=document.createElement("div"),u.id="kai-panel";const s=document.createElement("div");s.id="kai-header";const c=document.createElement("div");c.id="kai-header-avatar";const h=document.createElement("div");if(h.id="kai-header-icon",t){const n=document.createElement("img");n.src=t,n.alt=i,h.appendChild(n)}else h.innerHTML=ae;c.appendChild(h);const g=document.createElement("div");g.id="kai-accent-dot",c.appendChild(g);const p=document.createElement("div");p.id="kai-header-text";const E=document.createElement("div");E.id="kai-header-title",E.textContent=i;const q=document.createElement("div");q.id="kai-header-subtitle",q.textContent=e,p.appendChild(E),p.appendChild(q);const M=document.createElement("button");M.id="kai-close",M.innerHTML=fe,M.setAttribute("aria-label","Close chat"),M.addEventListener("click",re),s.appendChild(c),s.appendChild(p),s.appendChild(M),d=document.createElement("div"),d.id="kai-messages";const J=document.createElement("div");J.id="kai-empty";const ye=oe.trim()||`Ask me anything about ${i}!`;J.innerHTML=`${ae}<p>${ye}</p>`,d.appendChild(J),m=document.createElement("div"),m.id="kai-typing",m.innerHTML='<div class="kai-dot"></div><div class="kai-dot"></div><div class="kai-dot"></div>',d.appendChild(m);const H=document.createElement("div");H.id="kai-input-row",a=document.createElement("textarea"),a.id="kai-input",a.placeholder="Type a message…",a.rows=1,a.addEventListener("keydown",n=>{n.key==="Enter"&&!n.shiftKey&&(n.preventDefault(),le())}),a.addEventListener("input",()=>{a.style.height="auto",a.style.height=Math.min(a.scrollHeight,100)+"px"});const K=document.createElement("div");K.id="kai-input-actions";const T=document.createElement("button");T.id="kai-send",T.innerHTML=be,T.setAttribute("aria-label","Send message"),T.addEventListener("click",le),K.appendChild(T),H.appendChild(a),H.appendChild(K);const Q=document.createElement("div");Q.id="kai-footer",Q.textContent="Powered by Bentivi",u.appendChild(s),u.appendChild(d),u.appendChild(H),u.appendChild(Q),r.appendChild(l),r.appendChild(u),v.appendChild(r),document.body.appendChild(C)}function re(){S=!S,u.classList.toggle("open",S),S?(Y=l.innerHTML,l.innerHTML=ke,window.innerWidth<=640&&Object.assign(C.style,{top:"0",left:"0",right:"0",bottom:"0"}),setTimeout(()=>a.focus(),150)):(l.innerHTML=Y,window.innerWidth<=640&&Object.assign(C.style,{top:"",left:"",right:""}))}function se(){const o=v.getElementById("kai-empty");b.length>0&&o&&o.remove(),d.querySelectorAll(".kai-msg-group, .kai-msg").forEach(i=>i.remove()),b.forEach(i=>{if(i.role==="assistant"){const e=document.createElement("div");e.className="kai-msg-group";const t=document.createElement("div");t.className="kai-msg assistant",t.textContent=i.text,e.appendChild(t);const s=document.createElement("span");s.className="kai-attribution",s.textContent=`${_.trim()||k} · AI · just now`,e.appendChild(s),d.insertBefore(e,m)}else{const e=document.createElement("div");e.className="kai-msg user",e.textContent=i.text,d.insertBefore(e,m)}}),R(I),d.scrollTop=d.scrollHeight}function R(o){I=o,m.classList.toggle("visible",o),o&&(d.scrollTop=d.scrollHeight)}async function le(){var i,e,t;const o=a.value.trim();if(!o||I)return;b.push({role:"user",text:o}),a.value="",a.style.height="auto",se(),R(!0);const r=v.getElementById("kai-send");r&&(r.disabled=!0);try{const s=await fetch(`${Z}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({projectId:A,message:o})}),c=await s.json();if(s.ok)b.push({role:"assistant",text:((t=c.data)==null?void 0:t.answer)??"(no response)"});else{const h=(c==null?void 0:c.code)??"error",g={blocked:"Sorry, that message contains blocked content.",rate_limited:"You're sending messages too fast. Please wait a moment.",cap_exceeded:"Monthly usage limit reached.",no_api_key:"This assistant is not configured yet."},E=((i={blocked:y.blocked,rate_limited:y.rateLimited,cap_exceeded:y.capExceeded,error:y.apiError}[h])==null?void 0:i.trim())||g[h]||((e=y.default)==null?void 0:e.trim())||"Something went wrong. Please try again.";b.push({role:"assistant",text:E})}}catch{b.push({role:"assistant",text:"Could not reach the server. Please try again."})}finally{R(!1),r&&(r.disabled=!1),se(),a.focus()}}async function de(){try{const o=await fetch(`${Z}/api/widget-config/${A}`);if(o.ok){const{data:r}=await o.json();k=r.projectName??k;const i=r.theme??{},e=i.bubble??{},t=i.chatWindow??{},s=i.global??{},c=i.advanced??{};if(B=e.backgroundColor??B,z=t.headerColor??z,F=t.userMessageColor??F,L=t.aiMessageColor??L,x=e.iconUrl??null,N=c.customCss??"",w=s.fontFamily??"system",U=t.colorScheme??"auto",O=e.shape??"circle",ee=e.label??"AI-mode",P=e.backgroundType??"solid",$=e.gradientFrom??$,V=e.gradientTo??V,W=t.headerLogoUrl??null,_=t.headerTitle??"",te=t.headerSubtitle??"",D=t.darkHeaderColor??D,G=t.darkUserMessageColor??G,j=t.darkAiMessageColor??j,oe=t.welcomeText??"",y=r.errorMessages??{},w!=="system"){const g={inter:"Inter:wght@400;500;600",roboto:"Roboto:wght@400;500;700","open-sans":"Open+Sans:wght@400;500;600",nunito:"Nunito:wght@400;500;600"}[w];if(g){const p=document.createElement("link");p.rel="stylesheet",p.href=`https://fonts.googleapis.com/css2?family=${g}&display=swap`,document.head.appendChild(p)}}}}catch{}xe()}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",de):de()})()})();

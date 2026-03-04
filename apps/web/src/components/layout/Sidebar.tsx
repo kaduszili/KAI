@@ -8,7 +8,8 @@ import {
   Users,
   Shield,
   LogOut,
-  Bot,
+  Bird,
+  UserCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -71,9 +72,9 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-3 mb-6">
         <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-600">
-          <Bot size={15} className="text-white" />
+          <Bird size={15} className="text-white" />
         </div>
-        <span className="text-base font-bold text-white tracking-tight">KAI</span>
+        <span className="text-base font-bold text-white tracking-tight">Bentivi</span>
       </div>
 
       {/* Nav */}
@@ -91,6 +92,20 @@ export function Sidebar() {
           <p className="text-sm font-medium text-slate-200 truncate">{user?.name}</p>
           <p className="text-xs text-slate-500 truncate">{user?.email}</p>
         </div>
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            cn(
+              'flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-brand-600 text-white'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100',
+            )
+          }
+        >
+          <UserCircle size={16} />
+          Profile
+        </NavLink>
         <button
           onClick={logout}
           className="flex w-full items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors cursor-pointer"
