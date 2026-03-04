@@ -11,6 +11,7 @@ import { widgetConfigRoutes } from './routes/widgetConfig.js'
 import { statsRoutes }        from './routes/stats.js'
 import { messagesRoutes }     from './routes/messages.js'
 import { superadminRoutes }  from './routes/superadmin.js'
+import { invitationRoutes }  from './routes/invitations.js'
 import { AppError } from './types.js'
 import { logger } from './lib/logger.js'
 import type { HonoVariables } from './types.js'
@@ -22,10 +23,11 @@ const app = new Hono<{ Variables: HonoVariables }>()
 app.use('*', honoLogger())
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-// Public endpoints — open to any origin (widget, chat)
+// Public endpoints — open to any origin (widget, chat, invitations)
 // Note: use /* suffix so the middleware applies to all sub-paths (e.g. /api/widget-config/:id)
 app.use('/api/chat/*',          publicCors)
 app.use('/api/widget-config/*', publicCors)
+app.use('/api/invitations/*',   publicCors)
 
 // All other API routes — restricted to admin dashboard origin
 app.use('/api/*', adminCors)
@@ -42,6 +44,7 @@ app.route('/api/widget-config',  widgetConfigRoutes)
 app.route('/api/stats',          statsRoutes)
 app.route('/api/messages',       messagesRoutes)
 app.route('/api/superadmin',     superadminRoutes)
+app.route('/api/invitations',    invitationRoutes)
 
 // Health check
 app.get('/health', (c) => c.json({ ok: true, env: process.env.NODE_ENV }))

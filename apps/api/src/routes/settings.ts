@@ -47,6 +47,7 @@ router.patch(
         customCss: z.string().max(5000),
       }).passthrough().optional(),
     }).optional(),
+    monthlyTokenCap: z.number().int().min(1).max(10_000_000).optional(),
     errorMessages: z.object({
       noKnowledge: z.string().max(500).optional(),
       blocked:     z.string().max(500).optional(),

@@ -74,7 +74,7 @@ export function Sidebar() {
         <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-brand-600">
           <Bird size={15} className="text-white" />
         </div>
-        <span className="text-base font-bold text-white tracking-tight">Bentivi</span>
+        <span className="text-base font-bold text-white tracking-tight">Bentevi</span>
       </div>
 
       {/* Nav */}

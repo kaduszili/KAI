@@ -8,6 +8,7 @@ import { OnboardingPage }  from '@/pages/OnboardingPage'
 import { KnowledgePage }   from '@/pages/KnowledgePage'
 import { SettingsPage }    from '@/pages/SettingsPage'
 import { ProfilePage }     from '@/pages/ProfilePage'
+import { InvitationPage }  from '@/pages/InvitationPage'
 import { AppearancePage }  from '@/pages/AppearancePage'
 import { MessagesPage }    from '@/pages/MessagesPage'
 import { OverviewPage }   from '@/pages/superadmin/OverviewPage'
@@ -37,8 +38,9 @@ export function App() {
       <BrowserRouter>
         <Routes>
           {/* Public */}
-          <Route path="/login"    element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login"            element={<LoginPage />} />
+          <Route path="/register"         element={<RegisterPage />} />
+          <Route path="/invite/:token"    element={<InvitationPage />} />
           <Route path="/onboarding" element={
             user ? <OnboardingPage /> : <Navigate to="/login" replace />
           } />

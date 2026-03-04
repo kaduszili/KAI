@@ -2,7 +2,7 @@ import { desc, eq, ne, sql } from 'drizzle-orm'
 import { db } from '../lib/db.js'
 import { users, projects, chatLogs, platformSettings } from '../schema/index.js'
 import { encrypt, decrypt } from '../lib/crypto.js'
-import { NotFoundError } from '../types.js'
+import { NotFoundError, ValidationError } from '../types.js'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -10,7 +10,9 @@ export interface AdminUser {
   id:               string
   name:             string
   email:            string
+  role:             string
   plan:             string
+  active:           boolean
   platformTokenCap: number | null
   onboardingDone:   boolean
   createdAt:        string
@@ -33,13 +35,15 @@ export class AdminService {
   // ── Users list with stats ─────────────────────────────────────────────────
 
   async getUsers(): Promise<AdminUser[]> {
-    // 1. All non-super-admin users + their project
+    // All users (including super_admins) + their project
     const userRows = await db
       .select({
         id:               users.id,
         name:             users.name,
         email:            users.email,
+        role:             users.role,
         plan:             users.plan,
+        active:           users.active,
         platformTokenCap: users.platformTokenCap,
         onboardingDone:   users.onboardingDone,
         createdAt:        users.createdAt,
@@ -48,12 +52,11 @@ export class AdminService {
       })
       .from(users)
       .leftJoin(projects, eq(projects.userId, users.id))
-      .where(ne(users.role, 'super_admin'))
       .orderBy(desc(users.createdAt))
 
     if (userRows.length === 0) return []
 
-    // 2. Aggregate message stats per project (two metrics in one pass)
+    // Aggregate message stats per project (two metrics in one pass)
     const startOfMonth = new Date()
     startOfMonth.setUTCDate(1)
     startOfMonth.setUTCHours(0, 0, 0, 0)
@@ -81,7 +84,9 @@ export class AdminService {
         id:               u.id,
         name:             u.name,
         email:            u.email,
+        role:             u.role,
         plan:             u.plan,
+        active:           u.active,
         platformTokenCap: u.platformTokenCap,
         onboardingDone:   u.onboardingDone,
         createdAt:        u.createdAt.toISOString(),
@@ -93,20 +98,27 @@ export class AdminService {
     })
   }
 
-  // ── Update user plan / token cap ──────────────────────────────────────────
+  // ── Update user plan / token cap / active status ──────────────────────────
 
   async updateUser(
+    requesterId: string,
     targetUserId: string,
-    data: { plan?: string; platformTokenCap?: number | null },
+    data: { plan?: string; platformTokenCap?: number | null; active?: boolean },
   ): Promise<void> {
     const user = await db.query.users.findFirst({
       where: eq(users.id, targetUserId),
     })
     if (!user) throw new NotFoundError('User not found')
 
+    // Prevent a superadmin from deactivating their own account
+    if (data.active === false && targetUserId === requesterId) {
+      throw new ValidationError('You cannot deactivate your own account')
+    }
+
     const patch: Record<string, unknown> = { updatedAt: new Date() }
-    if (data.plan !== undefined)             patch.plan             = data.plan
+    if (data.plan             !== undefined) patch.plan             = data.plan
     if (data.platformTokenCap !== undefined) patch.platformTokenCap = data.platformTokenCap
+    if (data.active           !== undefined) patch.active           = data.active
 
     await db.update(users).set(patch as any).where(eq(users.id, targetUserId))
   }

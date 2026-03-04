@@ -234,7 +234,7 @@ function WidgetPreview({
 
   // Resolved header content
   const displayTitle    = chatWindow.headerTitle.trim()    || projectName
-  const displaySubtitle = chatWindow.headerSubtitle.trim() || 'Bentivi'
+  const displaySubtitle = chatWindow.headerSubtitle.trim() || 'Bentevi'
   const headerLogo      = chatWindow.headerLogoUrl !== null ? chatWindow.headerLogoUrl : bubble.iconUrl
 
   const botIconSVG = (
@@ -373,25 +373,89 @@ function WidgetPreview({
               className="text-center text-[10px] pb-2 pt-1.5 flex-shrink-0"
               style={{ color: footerColor, background: panelBg, borderTop: `1px solid ${footerBdr}` }}
             >
-              Powered by Bentivi
+              Powered by{' '}
+              <a
+                href="https://bentevi.tech"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline pointer-events-none"
+                style={{ color: 'inherit' }}
+                tabIndex={-1}
+              >
+                Bentevi
+              </a>
             </div>
           </div>
 
+          {/* Sparkle animation keyframes — injected once when enabled */}
+          {bubble.showAnimation && (
+            <style>{`
+              @keyframes ap-sparkle-anim {
+                0%   { opacity: 0; transform: rotate(0deg);    }
+                8%   { opacity: 1; transform: rotate(172deg);  }
+                84%  { opacity: 1; transform: rotate(1800deg); }
+                100% { opacity: 0; transform: rotate(2160deg); }
+              }
+            `}</style>
+          )}
+
           {/* ── Bubble FAB ── (shows chevron-down since panel is open in preview) */}
           {bubble.shape === 'pill' ? (
-            <div
-              className={`absolute bottom-4 ${hSide} h-14 px-4 rounded-full shadow-lg flex items-center gap-2 cursor-pointer`}
-              style={{ background: bubbleBgStyle, color: '#fff' }}
-            >
-              <ChevronDown size={20} />
-              <span className="text-sm font-semibold">{bubble.label || 'AI-mode'}</span>
+            /* Outer div: absolute positioning; inner div: relative for badge anchor */
+            <div className={`absolute bottom-4 ${hSide}`}>
+              <div
+                className="h-14 px-4 rounded-full shadow-lg flex items-center gap-2 cursor-pointer relative"
+                style={{ background: bubbleBgStyle, color: '#fff' }}
+              >
+                <ChevronDown size={20} />
+                <span className="text-sm font-semibold">{bubble.label || 'AI-mode'}</span>
+                {bubble.showAnimation && (
+                  <div style={{
+                    position: 'absolute', top: -6, left: -6,
+                    width: 18, height: 18, pointerEvents: 'none',
+                    animation: 'ap-sparkle-anim 6s ease-in-out 10s both',
+                  }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" width="18" height="18">
+                      <defs>
+                        <linearGradient id="ap-sg4" x1="11.249" y1="14.6222" x2="17.9998" y2="14.6222" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#0073ec"/><stop offset="100%" stopColor="#a644e5"/></linearGradient>
+                        <linearGradient id="ap-sg5" x1="11.2494" y1="3.37247" x2="17.9995" y2="3.37247" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#0073ec"/><stop offset="100%" stopColor="#a644e5"/></linearGradient>
+                        <linearGradient id="ap-sg7" x1="-0.002441" y1="8.99706" x2="13.4994" y2="8.99706" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#0073ec"/><stop offset="100%" stopColor="#a644e5"/></linearGradient>
+                      </defs>
+                      <path d="M17.844,14.3705l-2.0946-.8733-.8733-2.0946c-.0233-.0468-.0592-.0862-.1037-.1137-.0444-.0275-.0957-.0421-.148-.0421s-.1035.0146-.148.0421-.0804.0669-.1037.1137l-.8733,2.0946-2.0946.8733c-.0468.0233-.0862.0592-.1137.1037s-.0421.0957-.0421.148.0146.1036.0421.148.0669.0804.1137.1037l2.0946.8733.8733,2.0946c.0233.0468.0592.0862.1037.1137s.0957.0421.148.0421.1036-.0145.148-.0421c.0445-.0275.0804-.0669.1037-.1137l.8733-2.0946l2.0946-.8733c.0468-.0233.0862-.0592.1137-.1037s.0421-.0957.0421-.148-.0146-.1035-.0421-.148-.0669-.0804-.1137-.1037Z" fill="url(#ap-sg4)"/>
+                      <path d="M11.4048,3.62384l2.0946.87363.8733,2.09461c.0233.04681.0593.08618.1037.1137s.0957.0421.148.0421.1036-.01458.1481-.0421c.0444-.02752.0803-.06689.1037-.1137l.8732-2.09461l2.0947-.87363c.0467-.02336.0859-.05927.1134-.10369s.042-.09563.042-.14785-.0145-.10342-.042-.14785-.0667-.08033-.1134-.1037l-2.0947-.87328-.8732-2.094606c-.0234-.046802-.0593-.086174-.1037-.113694-.0445-.027521-.0958-.0421-.1481-.0421s-.1035.014579-.148.0421-.0804.066892-.1037.113694L13.4994,2.24747l-2.0946.87328c-.0467.02337-.086.05927-.1134.1037s-.042.09562-.042.14785.0145.10342.042.14785.0667.08033.1134.10369Z" fill="url(#ap-sg5)"/>
+                      <path d="M13.4994,8.98475c-.0001-.10451-.0292-.20694-.0841-.29589s-.1333-.16092-.2267-.2079L9.23111,6.4985L7.25251,2.53393c-.19125-.38215-.81527-.38215-1.00617,0L4.26775,6.4985L0.310207,8.48096c-.093882.04654-.172897.11838-.228138.20743s-.08451.19174-.08451.29653.02927.20749.08451.29654.134256.16088.228138.20743L4.26775,11.4713l1.97859,3.9646c.04672.0934.11853.172.20739.2269s.19124.084.2957.084.20684-.0291.29569-.084.16067-.1335.20739-.2269l1.9786-3.9646L13.1886,9.48959c.0935-.0471.1721-.11924.227-.20838s.0839-.19178.0838-.29646Z" fill="url(#ap-sg7)"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
-            <div
-              className={`absolute bottom-4 ${hSide} w-14 h-14 rounded-full shadow-lg flex items-center justify-center cursor-pointer`}
-              style={{ background: bubbleBgStyle }}
-            >
-              <ChevronDown size={22} color="white" />
+            /* Outer div: absolute positioning; inner div: relative for badge anchor */
+            <div className={`absolute bottom-4 ${hSide}`}>
+              <div
+                className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center cursor-pointer relative"
+                style={{ background: bubbleBgStyle }}
+              >
+                <ChevronDown size={22} color="white" />
+                {bubble.showAnimation && (
+                  <div style={{
+                    position: 'absolute', top: -6, left: -6,
+                    width: 18, height: 18, pointerEvents: 'none',
+                    animation: 'ap-sparkle-anim 6s ease-in-out 10s both',
+                  }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" width="18" height="18">
+                      <defs>
+                        <linearGradient id="ap-sg4b" x1="11.249" y1="14.6222" x2="17.9998" y2="14.6222" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#0073ec"/><stop offset="100%" stopColor="#a644e5"/></linearGradient>
+                        <linearGradient id="ap-sg5b" x1="11.2494" y1="3.37247" x2="17.9995" y2="3.37247" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#0073ec"/><stop offset="100%" stopColor="#a644e5"/></linearGradient>
+                        <linearGradient id="ap-sg7b" x1="-0.002441" y1="8.99706" x2="13.4994" y2="8.99706" gradientUnits="userSpaceOnUse"><stop offset="0%" stopColor="#0073ec"/><stop offset="100%" stopColor="#a644e5"/></linearGradient>
+                      </defs>
+                      <path d="M17.844,14.3705l-2.0946-.8733-.8733-2.0946c-.0233-.0468-.0592-.0862-.1037-.1137-.0444-.0275-.0957-.0421-.148-.0421s-.1035.0146-.148.0421-.0804.0669-.1037.1137l-.8733,2.0946-2.0946.8733c-.0468.0233-.0862.0592-.1137.1037s-.0421.0957-.0421.148.0146.1036.0421.148.0669.0804.1137.1037l2.0946.8733.8733,2.0946c.0233.0468.0592.0862.1037.1137s.0957.0421.148.0421.1036-.0145.148-.0421c.0445-.0275.0804-.0669.1037-.1137l.8733-2.0946l2.0946-.8733c.0468-.0233.0862-.0592.1137-.1037s.0421-.0957.0421-.148-.0146-.1035-.0421-.148-.0669-.0804-.1137-.1037Z" fill="url(#ap-sg4b)"/>
+                      <path d="M11.4048,3.62384l2.0946.87363.8733,2.09461c.0233.04681.0593.08618.1037.1137s.0957.0421.148.0421.1036-.01458.1481-.0421c.0444-.02752.0803-.06689.1037-.1137l.8732-2.09461l2.0947-.87363c.0467-.02336.0859-.05927.1134-.10369s.042-.09563.042-.14785-.0145-.10342-.042-.14785-.0667-.08033-.1134-.1037l-2.0947-.87328-.8732-2.094606c-.0234-.046802-.0593-.086174-.1037-.113694-.0445-.027521-.0958-.0421-.1481-.0421s-.1035.014579-.148.0421-.0804.066892-.1037.113694L13.4994,2.24747l-2.0946.87328c-.0467.02337-.086.05927-.1134.1037s-.042.09562-.042.14785.0145.10342.042.14785.0667.08033.1134.10369Z" fill="url(#ap-sg5b)"/>
+                      <path d="M13.4994,8.98475c-.0001-.10451-.0292-.20694-.0841-.29589s-.1333-.16092-.2267-.2079L9.23111,6.4985L7.25251,2.53393c-.19125-.38215-.81527-.38215-1.00617,0L4.26775,6.4985L0.310207,8.48096c-.093882.04654-.172897.11838-.228138.20743s-.08451.19174-.08451.29653.02927.20749.08451.29654.134256.16088.228138.20743L4.26775,11.4713l1.97859,3.9646c.04672.0934.11853.172.20739.2269s.19124.084.2957.084.20684-.0291.29569-.084.16067-.1335.20739-.2269l1.9786-3.9646L13.1886,9.48959c.0935-.0471.1721-.11924.227-.20838s.0839-.19178.0838-.29646Z" fill="url(#ap-sg7b)"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -495,7 +559,7 @@ export function AppearancePage() {
     )
   }
 
-  const projectName = project?.name ?? 'Bentivi'
+  const projectName = project?.name ?? 'Bentevi'
   const showDark    = theme.chatWindow.colorScheme !== 'light'
 
   const selectCls = 'w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2'
@@ -640,6 +704,30 @@ export function AppearancePage() {
                 />
                 <p className="text-xs text-slate-400">Recommended: 32×32 SVG or PNG. Stored as data URL.</p>
               </div>
+
+              {/* Sparkle animation */}
+              <div className="flex items-center justify-between py-2 border-t border-slate-100 pt-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Sparkle animation</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Show an animated badge on the bubble when chat is closed
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBubble({ showAnimation: !theme.bubble.showAnimation })}
+                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                    theme.bubble.showAnimation ? 'bg-indigo-600' : 'bg-slate-200'
+                  }`}
+                  role="switch"
+                  aria-checked={theme.bubble.showAnimation}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    theme.bubble.showAnimation ? 'translate-x-4' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
+
             </CardContent>
           </Card>
 
@@ -759,10 +847,10 @@ export function AppearancePage() {
                     id="header-subtitle"
                     value={theme.chatWindow.headerSubtitle}
                     onChange={(e) => setChatWindow({ headerSubtitle: e.target.value })}
-                    placeholder="Bentivi"
+                    placeholder="Bentevi"
                     maxLength={80}
                   />
-                  <p className="text-xs text-slate-400">Leave empty to use "Bentivi".</p>
+                  <p className="text-xs text-slate-400">Leave empty to use "Bentevi".</p>
                 </div>
               </div>
 

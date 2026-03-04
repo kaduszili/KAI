@@ -42,6 +42,7 @@ export const users = pgTable('users', {
   passwordHash:     varchar('password_hash', { length: 255 }).notNull(),
   role:             userRoleEnum('role').notNull().default('customer'),
   plan:             planEnum('plan').notNull().default('free'),
+  active:           boolean('active').notNull().default(true),
   platformTokenCap: integer('platform_token_cap'),   // null = unlimited (pro plan only)
   onboardingDone:   boolean('onboarding_done').notNull().default(false),
   createdAt:        timestamp('created_at').notNull().defaultNow(),
@@ -112,6 +113,20 @@ export const platformSettings = pgTable('platform_settings', {
   key:       varchar('key',   { length: 255 }).notNull().unique(),
   value:     text('value').notNull(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+// ─── invitations ──────────────────────────────────────────────────────────────
+
+export const invitations = pgTable('invitations', {
+  id:          uuid('id').primaryKey().defaultRandom(),
+  token:       varchar('token', { length: 64 }).unique().notNull(),
+  email:       varchar('email', { length: 255 }).notNull(),
+  name:        varchar('name',  { length: 255 }).notNull(),
+  plan:        planEnum('plan').notNull().default('free'),
+  used:        boolean('used').notNull().default(false),
+  expiresAt:   timestamp('expires_at').notNull(),
+  createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt:   timestamp('created_at').notNull().defaultNow(),
 })
 
 // ─── rate_limits ──────────────────────────────────────────────────────────────

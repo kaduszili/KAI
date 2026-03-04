@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router'
 import { CheckCircle2, AlertCircle, Copy, Check, Eye, EyeOff } from 'lucide-react'
@@ -8,6 +8,7 @@ import { Label }    from '@/components/ui/label'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { api, ApiError } from '@/lib/api'
 import { ErrorMessages, DEFAULT_ERROR_MESSAGES } from '@kai/shared'
+import { useAuthStore } from '@/store/auth'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -102,28 +103,47 @@ function ChatbotNameCard({
 
 // ─── API Key Card ─────────────────────────────────────────────────────────────
 
+const FREE_TOKEN_CAP     = 10_000
+const PRO_PLATFORM_CAP   = 200_000
+
 function ApiKeyCard({
   isSet,
+  plan,
+  monthlyTokenCap,
   onSave,
   onClear,
+  onUpdateCap,
 }: {
-  isSet:   boolean
-  onSave:  (key: string) => Promise<void>
-  onClear: () => Promise<void>
+  isSet:           boolean
+  plan:            'free' | 'pro'
+  monthlyTokenCap: number
+  onSave:          (key: string, tokenCap?: number) => Promise<void>
+  onClear:         () => Promise<void>
+  onUpdateCap:     (cap: number) => Promise<void>
 }) {
-  const [key,      setKey]      = useState('')
-  const [show,     setShow]     = useState(false)
-  const [saving,   setSaving]   = useState(false)
-  const [clearing, setClearing] = useState(false)
-  const [error,    setError]    = useState<string | null>(null)
-  const [success,  setSuccess]  = useState(false)
+  const [key,        setKey]        = useState('')
+  const [show,       setShow]       = useState(false)
+  const [showOwnKey, setShowOwnKey] = useState(false)
+  const [newCap,     setNewCap]     = useState(String(monthlyTokenCap))
+  const [saving,     setSaving]     = useState(false)
+  const [clearing,   setClearing]   = useState(false)
+  const [savingCap,  setSavingCap]  = useState(false)
+  const [error,      setError]      = useState<string | null>(null)
+  const [success,    setSuccess]    = useState(false)
+
+  // Sync cap display when settings refresh
+  useEffect(() => { setNewCap(String(monthlyTokenCap)) }, [monthlyTokenCap])
+
+  const isPro            = plan === 'pro'
+  const usingPlatformKey = isPro && !isSet
 
   async function handleSave() {
     if (!key.trim()) return
     setSaving(true); setError(null); setSuccess(false)
     try {
-      await onSave(key.trim())
-      setKey('')
+      const cap = isPro ? (parseInt(newCap, 10) || PRO_PLATFORM_CAP) : undefined
+      await onSave(key.trim(), cap)
+      setKey(''); setShowOwnKey(false)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
@@ -144,64 +164,193 @@ function ApiKeyCard({
     }
   }
 
+  async function handleSaveCap() {
+    const parsed = parseInt(newCap, 10)
+    if (isNaN(parsed) || parsed < 1) { setError('Token limit must be a positive number'); return }
+    setSavingCap(true); setError(null)
+    try {
+      await onUpdateCap(parsed)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update limit')
+    } finally {
+      setSavingCap(false)
+    }
+  }
+
+  // ── Shared key input row ───────────────────────────────────────────────────
+  function KeyInput({ id }: { id: string }) {
+    return (
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Input
+            id={id}
+            type={show ? 'text' : 'password'}
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            placeholder="sk-..."
+            className="pr-9"
+          />
+          <button
+            type="button"
+            onClick={() => setShow((v) => !v)}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+          >
+            {show ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        </div>
+        <Button onClick={handleSave} disabled={!key.trim()} loading={saving}>Save</Button>
+      </div>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>OpenAI API Key</CardTitle>
-        <CardDescription>
-          Your key is encrypted at rest and never exposed in API responses.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Status badge */}
-        <div className="flex items-center gap-2">
-          {isSet ? (
-            <span className="inline-flex items-center gap-1.5 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
-              <CheckCircle2 size={14} />
-              Key is configured
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
-              <AlertCircle size={14} />
-              No key configured
-            </span>
-          )}
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle>OpenAI API Key</CardTitle>
+            <CardDescription className="mt-1.5">
+              {isPro
+                ? 'Use the Bentevi global key or bring your own for full control.'
+                : 'Your own OpenAI API key is required to activate your chatbot.'}
+            </CardDescription>
+          </div>
+          <span className={[
+            'flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold',
+            isPro
+              ? 'bg-brand-100 text-brand-700'
+              : 'bg-slate-100 text-slate-600',
+          ].join(' ')}>
+            {isPro ? 'Pro plan' : 'Free plan'}
+          </span>
         </div>
+      </CardHeader>
 
+      <CardContent className="space-y-4">
         {error   && <p className="text-sm text-red-600">{error}</p>}
         {success && <p className="text-sm text-green-600">Key saved successfully.</p>}
 
-        <div className="space-y-1.5">
-          <Label htmlFor="api-key">{isSet ? 'Replace key' : 'Enter your OpenAI API key'}</Label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                id="api-key"
-                type={show ? 'text' : 'password'}
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                placeholder="sk-..."
-                className="pr-9"
-              />
+        {/* ── Free plan ──────────────────────────────────────────────────────── */}
+        {!isPro && (
+          <>
+            <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 rounded-lg px-3 py-2.5">
+              <span className="font-medium text-slate-700">{FREE_TOKEN_CAP.toLocaleString()} tokens / month</span>
+              <span className="text-slate-300">·</span>
+              <span>Add your own key to activate your chatbot</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isSet ? (
+                <span className="inline-flex items-center gap-1.5 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
+                  <CheckCircle2 size={14} /> Key is configured
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
+                  <AlertCircle size={14} /> No key configured
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="api-key-free">{isSet ? 'Replace key' : 'Enter your OpenAI API key'}</Label>
+              <KeyInput id="api-key-free" />
+            </div>
+
+            {isSet && (
+              <Button variant="ghost" size="sm" onClick={handleClear} loading={clearing}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                Remove key
+              </Button>
+            )}
+          </>
+        )}
+
+        {/* ── Pro — using platform key ───────────────────────────────────────── */}
+        {isPro && usingPlatformKey && (
+          <>
+            <div className="flex items-center gap-2.5 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
+              <CheckCircle2 size={14} className="flex-shrink-0" />
+              <span>Using the Bentevi global key — <strong>{PRO_PLATFORM_CAP.toLocaleString()} tokens / month</strong> included.</span>
+            </div>
+
+            {!showOwnKey ? (
               <button
                 type="button"
-                onClick={() => setShow((v) => !v)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                onClick={() => setShowOwnKey(true)}
+                className="text-sm text-brand-600 hover:text-brand-700 underline underline-offset-2"
               >
-                {show ? <EyeOff size={14} /> : <Eye size={14} />}
+                Add your own key instead
               </button>
-            </div>
-            <Button onClick={handleSave} disabled={!key.trim()} loading={saving}>
-              Save
-            </Button>
-          </div>
-        </div>
+            ) : (
+              <div className="space-y-3 border border-slate-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-slate-700">Use your own OpenAI key</p>
 
-        {isSet && (
-          <Button variant="ghost" size="sm" onClick={handleClear} loading={clearing}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50">
-            Remove key
-          </Button>
+                <div className="space-y-1.5">
+                  <Label htmlFor="api-key-pro">API key</Label>
+                  <KeyInput id="api-key-pro" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="token-cap-new">Monthly token limit</Label>
+                  <Input
+                    id="token-cap-new"
+                    type="number"
+                    min={1}
+                    value={newCap}
+                    onChange={(e) => setNewCap(e.target.value)}
+                    className="w-48"
+                  />
+                  <p className="text-xs text-slate-400">How many tokens per month before the chatbot stops responding.</p>
+                </div>
+
+                <Button variant="outline" size="sm"
+                  onClick={() => { setShowOwnKey(false); setKey(''); setError(null) }}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Pro — own key active ───────────────────────────────────────────── */}
+        {isPro && !usingPlatformKey && (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
+                <CheckCircle2 size={14} /> Using your own key
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="api-key-replace">Replace key</Label>
+              <KeyInput id="api-key-replace" />
+            </div>
+
+            {/* Token cap editor */}
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="token-cap">Monthly token limit</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  id="token-cap"
+                  type="number"
+                  min={1}
+                  value={newCap}
+                  onChange={(e) => setNewCap(e.target.value)}
+                  className="w-48"
+                />
+                <Button variant="outline" size="sm" onClick={handleSaveCap} loading={savingCap}>
+                  Save limit
+                </Button>
+              </div>
+              <p className="text-xs text-slate-400">Tokens per month before the chatbot stops responding.</p>
+            </div>
+
+            {/* Switch back to platform key */}
+            <Button variant="ghost" size="sm" onClick={handleClear} loading={clearing}
+              className="text-slate-500 hover:text-slate-700 hover:bg-slate-100">
+              Switch to Bentevi global key (200k / month)
+            </Button>
+          </>
         )}
       </CardContent>
     </Card>
@@ -438,7 +587,9 @@ function ErrorMessagesCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function SettingsPage() {
-  const qc = useQueryClient()
+  const qc   = useQueryClient()
+  const user = useAuthStore((s) => s.user)
+  const plan = (user?.plan ?? 'free') as 'free' | 'pro'
 
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = (searchParams.get('tab') ?? 'general') as SettingsTab
@@ -471,12 +622,21 @@ export function SettingsPage() {
     await projectNameMutation.mutateAsync(name)
   }
 
-  async function saveKey(key: string) {
-    await updateMutation.mutateAsync({ openaiApiKey: key })
+  async function saveKey(key: string, tokenCap?: number) {
+    const body: Record<string, unknown> = { openaiApiKey: key }
+    if (tokenCap !== undefined) body.monthlyTokenCap = tokenCap
+    await updateMutation.mutateAsync(body)
   }
 
   async function clearKey() {
-    await updateMutation.mutateAsync({ openaiApiKey: null })
+    // Pro users switching back to the platform key → reset cap to 200k
+    const body: Record<string, unknown> = { openaiApiKey: null }
+    if (plan === 'pro') body.monthlyTokenCap = PRO_PLATFORM_CAP
+    await updateMutation.mutateAsync(body)
+  }
+
+  async function saveTokenCap(cap: number) {
+    await updateMutation.mutateAsync({ monthlyTokenCap: cap })
   }
 
   async function saveConfig(data: { openaiModel: string; systemMessage: string }) {
@@ -538,8 +698,11 @@ export function SettingsPage() {
           )}
           <ApiKeyCard
             isSet={settings.openaiApiKeySet}
+            plan={plan}
+            monthlyTokenCap={settings.monthlyTokenCap}
             onSave={saveKey}
             onClear={clearKey}
+            onUpdateCap={saveTokenCap}
           />
           <ConfigCard
             settings={settings}

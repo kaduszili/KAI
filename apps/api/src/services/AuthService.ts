@@ -47,8 +47,9 @@ export class AuthService {
       .returning()
 
     await db.insert(projectSettings).values({
-      projectId: project.id,
-      themeJson: DEFAULT_THEME,
+      projectId:      project.id,
+      themeJson:      DEFAULT_THEME,
+      monthlyTokenCap: 10_000,   // Free plan default
     })
 
     return this.toPublic(user)

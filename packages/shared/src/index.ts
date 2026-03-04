@@ -82,6 +82,7 @@ export interface ThemeConfig {
     backgroundType: 'solid' | 'gradient'
     gradientFrom: string
     gradientTo: string
+    showAnimation?: boolean
   }
   chatWindow: {
     template: 'default' | 'minimal' | 'rounded'
@@ -114,6 +115,7 @@ export const DEFAULT_THEME: ThemeConfig = {
     backgroundType: 'solid',
     gradientFrom: '#6366f1',
     gradientTo: '#8b5cf6',
+    showAnimation: false,
   },
   chatWindow: {
     template: 'default',

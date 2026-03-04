@@ -44,7 +44,7 @@ export function RegisterPage() {
           <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-600">
             <Bird size={18} className="text-white" />
           </div>
-          <span className="text-xl font-bold text-slate-900">Bentivi</span>
+          <span className="text-xl font-bold text-slate-900">Bentevi</span>
         </div>
 
         {/* Card */}

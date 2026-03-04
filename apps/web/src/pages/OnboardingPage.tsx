@@ -252,7 +252,7 @@ export function OnboardingPage() {
         <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
           <Bird className="w-5 h-5 text-white" />
         </div>
-        <span className="text-lg font-semibold text-slate-900">Bentivi</span>
+        <span className="text-lg font-semibold text-slate-900">Bentevi</span>
       </div>
 
       {/* Card */}
