@@ -6,9 +6,9 @@ export default defineConfig({
   target:     'node22',
   outDir:     'dist',
   bundle:     true,
-  // Inline the workspace TypeScript package (@kai/shared) so the server
-  // does not need pnpm workspace symlinks at runtime.
-  // All npm packages remain external and are installed via npm install.
-  noExternal: [/@kai\/.*/],
+  splitting:  false,  // single output file — no chunk imports to manage on server
+  // Bundle ALL dependencies (workspace + npm packages) into a single file
+  // so the server needs no npm install — upload index.js + .env and done.
+  noExternal: [/.*/],
   clean:      true,
 })
