@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Users, ChevronDown, ChevronRight } from 'lucide-react'
+import { Users, ChevronDown, ChevronRight, X, Check, Copy, ShieldCheck } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { api } from '@/lib/api'
+import { Label } from '@/components/ui/label'
+import { api, ApiError } from '@/lib/api'
+import { useAuthStore } from '@/store/auth'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -12,7 +14,9 @@ interface AdminUser {
   id:               string
   name:             string
   email:            string
+  role:             string
   plan:             string
+  active:           boolean
   platformTokenCap: number | null
   onboardingDone:   boolean
   createdAt:        string
@@ -67,12 +71,16 @@ function EmptyState() {
 // ─── Edit row ─────────────────────────────────────────────────────────────────
 
 interface EditRowProps {
-  user:    AdminUser
-  onClose: () => void
+  user:      AdminUser
+  currentId: string   // logged-in superadmin's own ID
+  onClose:   () => void
 }
 
-function EditRow({ user, onClose }: EditRowProps) {
+function EditRow({ user, currentId, onClose }: EditRowProps) {
   const queryClient = useQueryClient()
+  const isSelf      = user.id === currentId
+  const isAdmin     = user.role === 'super_admin'
+
   const [plan,    setPlan]    = useState<'free' | 'pro'>(user.plan as 'free' | 'pro')
   const [capStr,  setCapStr]  = useState<string>(
     user.platformTokenCap !== null ? String(user.platformTokenCap) : '',
@@ -80,21 +88,20 @@ function EditRow({ user, onClose }: EditRowProps) {
   const [error, setError] = useState<string | null>(null)
 
   const mutation = useMutation({
-    mutationFn: (body: { plan?: string; platformTokenCap?: number | null }) =>
+    mutationFn: (body: { plan?: string; platformTokenCap?: number | null; active?: boolean }) =>
       api.patch(`/api/superadmin/users/${user.id}`, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['superadmin', 'users'] })
       onClose()
     },
     onError: (err: any) => {
-      setError(err?.message ?? 'Failed to save changes')
+      setError(err instanceof ApiError ? err.message : (err?.message ?? 'Failed to save changes'))
     },
   })
 
   function handleSave() {
     setError(null)
 
-    // Validate token cap
     let platformTokenCap: number | null | undefined = undefined
     if (capStr.trim() === '') {
       platformTokenCap = null
@@ -116,71 +123,255 @@ function EditRow({ user, onClose }: EditRowProps) {
     mutation.mutate(body)
   }
 
+  function handleToggleActive() {
+    mutation.mutate({ active: !user.active })
+  }
+
   return (
     <tr className="bg-slate-50">
       <td colSpan={6} className="px-10 py-5">
         <div className="space-y-4 max-w-md">
           <p className="text-sm font-semibold text-slate-700">
             Edit {user.name || user.email}
+            {isAdmin && (
+              <span className="ml-2 text-xs font-normal text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md">
+                Super Admin
+              </span>
+            )}
           </p>
 
-          {/* Plan toggle */}
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Plan</label>
-            <div className="flex gap-2">
-              {(['free', 'pro'] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPlan(p)}
-                  className={[
-                    'px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors capitalize',
-                    plan === p
-                      ? 'bg-brand-600 text-white border-brand-600'
-                      : 'bg-white text-slate-600 border-slate-300 hover:border-slate-400',
-                  ].join(' ')}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Plan + token cap — only editable for non-admin customers */}
+          {!isAdmin && (
+            <>
+              {/* Plan toggle */}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">Plan</label>
+                <div className="flex gap-2">
+                  {(['free', 'pro'] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPlan(p)}
+                      className={[
+                        'px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors capitalize',
+                        plan === p
+                          ? 'bg-brand-600 text-white border-brand-600'
+                          : 'bg-white text-slate-600 border-slate-300 hover:border-slate-400',
+                      ].join(' ')}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Token cap */}
+              {/* Token cap */}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1">
+                  Monthly token cap override
+                  <span className="ml-1 font-normal text-slate-400">(leave blank for no cap)</span>
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="e.g. 500000"
+                  value={capStr}
+                  onChange={(e) => { setCapStr(e.target.value); setError(null) }}
+                  className={`w-48 ${error ? 'border-red-400' : ''}`}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Activate / Deactivate */}
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">
-              Monthly token cap override
-              <span className="ml-1 font-normal text-slate-400">(leave blank for no cap)</span>
-            </label>
-            <Input
-              type="number"
-              min={0}
-              placeholder="e.g. 500000"
-              value={capStr}
-              onChange={(e) => { setCapStr(e.target.value); setError(null) }}
-              className={`w-48 ${error ? 'border-red-400' : ''}`}
-            />
+            <label className="block text-xs font-medium text-slate-500 mb-2">Account status</label>
+            {isSelf ? (
+              <p className="text-xs text-slate-400">You cannot deactivate your own account.</p>
+            ) : user.active ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToggleActive}
+                disabled={mutation.isPending}
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
+              >
+                Deactivate user
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToggleActive}
+                disabled={mutation.isPending}
+                className="border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300"
+              >
+                Activate user
+              </Button>
+            )}
           </div>
 
           {error && <p className="text-xs text-red-500">{error}</p>}
 
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleSave} disabled={mutation.isPending}>
-              {mutation.isPending ? 'Saving…' : 'Save'}
-            </Button>
+          {/* Save / Cancel — only show if there's something editable beyond active toggle */}
+          {!isAdmin && (
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSave} disabled={mutation.isPending}>
+                {mutation.isPending ? 'Saving…' : 'Save'}
+              </Button>
+              <Button variant="outline" size="sm" onClick={onClose}>
+                Cancel
+              </Button>
+            </div>
+          )}
+          {isAdmin && (
             <Button variant="outline" size="sm" onClick={onClose}>
-              Cancel
+              Close
             </Button>
-          </div>
+          )}
         </div>
       </td>
     </tr>
   )
 }
 
+// ─── Invite Modal ─────────────────────────────────────────────────────────────
+
+interface InviteModalProps {
+  onClose: () => void
+}
+
+function InviteModal({ onClose }: InviteModalProps) {
+  const [name,    setName]    = useState('')
+  const [email,   setEmail]   = useState('')
+  const [plan,    setPlan]    = useState<'free' | 'pro'>('free')
+  const [link,    setLink]    = useState<string | null>(null)
+  const [copied,  setCopied]  = useState(false)
+  const [error,   setError]   = useState<string | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.post<{ id: string; token: string; link: string; expiresAt: string }>(
+        '/api/superadmin/invitations',
+        { name: name.trim(), email: email.trim(), plan },
+      ),
+    onSuccess: (data) => {
+      setLink(data.link)
+    },
+    onError: (err: any) => {
+      setError(err instanceof ApiError ? err.message : 'Failed to create invitation')
+    },
+  })
+
+  async function handleCopy() {
+    if (!link) return
+    await navigator.clipboard.writeText(link)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleSubmit() {
+    setError(null)
+    if (!name.trim())                    { setError('Name is required'); return }
+    if (!email.trim())                   { setError('Email is required'); return }
+    if (!/\S+@\S+\.\S+/.test(email))    { setError('Enter a valid email'); return }
+    mutation.mutate()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h2 className="text-base font-semibold text-slate-900">Invite user</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          {!link ? (
+            <>
+              {error && <p className="text-sm text-red-600">{error}</p>}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="inv-name">First name</Label>
+                <Input
+                  id="inv-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Jane"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="inv-email">Email address</Label>
+                <Input
+                  id="inv-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="jane@example.com"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Plan</Label>
+                <div className="flex gap-2">
+                  {(['free', 'pro'] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPlan(p)}
+                      className={[
+                        'px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors capitalize',
+                        plan === p
+                          ? 'bg-brand-600 text-white border-brand-600'
+                          : 'bg-white text-slate-600 border-slate-300 hover:border-slate-400',
+                      ].join(' ')}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+                <Button size="sm" onClick={handleSubmit} loading={mutation.isPending}>
+                  Generate link
+                </Button>
+              </div>
+            </>
+          ) : (
+            /* Success — show the link */
+            <>
+              <p className="text-sm text-slate-600">
+                Invitation link generated. Copy and share it with <strong>{name}</strong>.
+                The link expires in 7 days.
+              </p>
+              <div className="flex gap-2">
+                <Input value={link} readOnly className="font-mono text-xs text-slate-700 bg-slate-50" />
+                <Button size="sm" onClick={handleCopy} className="flex-shrink-0">
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                </Button>
+              </div>
+              {copied && <p className="text-xs text-green-600">Copied!</p>}
+              <div className="flex justify-end pt-1">
+                <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function UsersPage() {
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const currentId        = useAuthStore((s) => s.user?.id ?? '')
+  const [expandedId,      setExpandedId]      = useState<string | null>(null)
+  const [showInviteModal, setShowInviteModal] = useState(false)
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['superadmin', 'users'],
@@ -195,17 +386,27 @@ export function UsersPage() {
   return (
     <div className="max-w-6xl">
 
+      {/* ── Invite Modal ────────────────────────────────────────────────────── */}
+      {showInviteModal && (
+        <InviteModal onClose={() => setShowInviteModal(false)} />
+      )}
+
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Users</h1>
           <p className="text-sm text-slate-500 mt-1">All registered users and their usage stats.</p>
         </div>
-        {users && users.length > 0 && (
-          <span className="text-sm text-slate-500 tabular-nums">
-            {users.length.toLocaleString()} user{users.length !== 1 ? 's' : ''}
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {users && users.length > 0 && (
+            <span className="text-sm text-slate-500 tabular-nums">
+              {users.length.toLocaleString()} user{users.length !== 1 ? 's' : ''}
+            </span>
+          )}
+          <Button size="sm" onClick={() => setShowInviteModal(true)}>
+            Invite user
+          </Button>
+        </div>
       </div>
 
       {/* ── Loading ──────────────────────────────────────────────────────────── */}
@@ -222,13 +423,13 @@ export function UsersPage() {
             <EmptyState />
           ) : (
             <CardContent className="p-0">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm table-fixed">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                    <th className="text-left text-xs font-medium text-slate-500 px-5 py-3 w-[40%]">
                       User
                     </th>
-                    <th className="text-left text-xs font-medium text-slate-500 px-4 py-3">
+                    <th className="text-left text-xs font-medium text-slate-500 px-4 py-3 w-24">
                       Plan
                     </th>
                     <th className="text-right text-xs font-medium text-slate-500 px-4 py-3 whitespace-nowrap">
@@ -252,9 +453,14 @@ export function UsersPage() {
                       <tr
                         key={user.id}
                         onClick={() => toggleExpand(user.id)}
-                        className="hover:bg-slate-50/60 cursor-pointer group"
+                        className={[
+                          'cursor-pointer group transition-colors',
+                          user.active
+                            ? 'hover:bg-slate-50/60'
+                            : 'bg-slate-50/40 opacity-60 hover:opacity-80',
+                        ].join(' ')}
                       >
-                        {/* User name + email */}
+                        {/* User name + email + badges */}
                         <td className="px-5 py-3 max-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-slate-400 flex-shrink-0 transition-colors group-hover:text-slate-600">
@@ -263,18 +469,34 @@ export function UsersPage() {
                                 : <ChevronRight size={14} />
                               }
                             </span>
-                            <div className="min-w-0">
-                              <p className="truncate text-slate-800 font-medium">
-                                {user.name || '—'}
-                              </p>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="truncate text-slate-800 font-medium">
+                                  {user.name || '—'}
+                                </p>
+                                {user.role === 'super_admin' && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                                    <ShieldCheck size={9} />
+                                    Admin
+                                  </span>
+                                )}
+                                {!user.active && (
+                                  <span className="inline-flex text-[10px] font-semibold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                                    Deactivated
+                                  </span>
+                                )}
+                              </div>
                               <p className="truncate text-xs text-slate-400">{user.email}</p>
                             </div>
                           </div>
                         </td>
 
-                        {/* Plan */}
+                        {/* Plan — show dash for super_admin */}
                         <td className="px-4 py-3">
-                          <PlanBadge plan={user.plan} />
+                          {user.role === 'super_admin'
+                            ? <span className="text-slate-300 text-xs">—</span>
+                            : <PlanBadge plan={user.plan} />
+                          }
                         </td>
 
                         {/* Monthly tokens */}
@@ -306,6 +528,7 @@ export function UsersPage() {
                         <EditRow
                           key={`${user.id}-edit`}
                           user={user}
+                          currentId={currentId}
                           onClose={() => setExpandedId(null)}
                         />
                       )}

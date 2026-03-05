@@ -17,7 +17,7 @@ export async function signToken(userId: string, role: UserRole): Promise<string>
 }
 
 export async function verifyToken(token: string): Promise<TokenPayload> {
-  return verify(token, secret(), 'HS256') as Promise<TokenPayload>
+  return verify(token, secret(), 'HS256') as unknown as Promise<TokenPayload>
 }
 
 export const COOKIE_NAME    = 'kai_token'

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { Bot, Globe, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Bird, Globe, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input }  from '@/components/ui/input'
 import { Label }  from '@/components/ui/label'
@@ -250,9 +250,9 @@ export function OnboardingPage() {
       {/* Logo */}
       <div className="flex items-center gap-2 mb-8">
         <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-          <Bot className="w-5 h-5 text-white" />
+          <Bird className="w-5 h-5 text-white" />
         </div>
-        <span className="text-lg font-semibold text-slate-900">KAI</span>
+        <span className="text-lg font-semibold text-slate-900">Bentevi</span>
       </div>
 
       {/* Card */}

@@ -14,6 +14,7 @@ export interface PublicSettings {
   rateLimitPerMinute: number
   monthlyTokenCap:    number
   themeJson:          unknown
+  errorMessages:      unknown
   updatedAt:          Date
 }
 
@@ -30,6 +31,7 @@ export class SettingsService {
       rateLimitPerMinute: settings.rateLimitPerMinute,
       monthlyTokenCap:    settings.monthlyTokenCap,
       themeJson:          settings.themeJson,
+      errorMessages:      settings.errorMessages,
       updatedAt:          settings.updatedAt,
     }
   }
@@ -60,6 +62,8 @@ export class SettingsService {
       systemMessage?:    string
       blockedKeywords?:  string[]
       themeJson?:        Record<string, unknown>
+      errorMessages?:    Record<string, string>
+      monthlyTokenCap?:  number
     },
   ): Promise<PublicSettings> {
     const project = await db.query.projects.findFirst({
@@ -78,10 +82,12 @@ export class SettingsService {
       patch.openaiApiKeyEncrypted = encrypt(data.openaiApiKey.trim())
     }
 
-    if (data.openaiModel     !== undefined) patch.openaiModel     = data.openaiModel
-    if (data.systemMessage   !== undefined) patch.systemMessage   = data.systemMessage
-    if (data.blockedKeywords !== undefined) patch.blockedKeywords = data.blockedKeywords
-    if (data.themeJson       !== undefined) patch.themeJson       = data.themeJson
+    if (data.openaiModel      !== undefined) patch.openaiModel      = data.openaiModel
+    if (data.systemMessage    !== undefined) patch.systemMessage    = data.systemMessage
+    if (data.blockedKeywords  !== undefined) patch.blockedKeywords  = data.blockedKeywords
+    if (data.themeJson        !== undefined) patch.themeJson        = data.themeJson
+    if (data.errorMessages    !== undefined) patch.errorMessages    = data.errorMessages
+    if (data.monthlyTokenCap  !== undefined) patch.monthlyTokenCap  = data.monthlyTokenCap
 
     const [updated] = await db
       .update(projectSettings)

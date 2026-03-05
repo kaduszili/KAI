@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
+import { useNavigate } from 'react-router'
 import { MessageSquare, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -89,6 +90,8 @@ function EmptyState({ filtered }: { filtered: boolean }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function MessagesPage() {
+  const navigate = useNavigate()
+
   const [page,       setPage]       = useState(0)
   const [status,     setStatus]     = useState('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -123,11 +126,20 @@ export function MessagesPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Conversation History</h1>
           <p className="text-sm text-slate-500 mt-1">All messages received by your AI assistant.</p>
         </div>
-        {data && data.total > 0 && (
-          <span className="text-sm text-slate-500 tabular-nums">
-            {data.total.toLocaleString()} conversation{data.total !== 1 ? 's' : ''}
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {data && data.total > 0 && (
+            <span className="text-sm text-slate-500 tabular-nums">
+              {data.total.toLocaleString()} conversation{data.total !== 1 ? 's' : ''}
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/settings?tab=error-messages')}
+          >
+            Configure error messages
+          </Button>
+        </div>
       </div>
 
       {/* ── Status filter tabs ───────────────────────────────────────────────── */}

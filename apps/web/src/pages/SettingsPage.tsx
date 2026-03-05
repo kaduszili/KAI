@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router'
 import { CheckCircle2, AlertCircle, Copy, Check, Eye, EyeOff } from 'lucide-react'
 import { Button }   from '@/components/ui/button'
 import { Input }    from '@/components/ui/input'
 import { Label }    from '@/components/ui/label'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { api, ApiError } from '@/lib/api'
+import { ErrorMessages, DEFAULT_ERROR_MESSAGES } from '@kai/shared'
+import { useAuthStore } from '@/store/auth'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -17,11 +20,14 @@ interface PublicSettings {
   blockedKeywords:    string[]
   rateLimitPerMinute: number
   monthlyTokenCap:    number
+  errorMessages:      unknown
 }
 
 interface Project {
-  id:   string
-  name: string
+  id:              string
+  name:            string
+  websiteUrl:      string | null
+  websiteCategory: string | null
 }
 
 const MODELS = [
@@ -31,30 +37,113 @@ const MODELS = [
   { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
 ]
 
+type SettingsTab = 'general' | 'error-messages'
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function mergeErrorMessages(stored: unknown): ErrorMessages {
+  const s = (stored ?? {}) as Partial<ErrorMessages>
+  return { ...DEFAULT_ERROR_MESSAGES, ...s }
+}
+
+// ─── Chatbot Name Card ────────────────────────────────────────────────────────
+
+function ChatbotNameCard({
+  initialName,
+  onSave,
+}: {
+  initialName: string
+  onSave: (name: string) => Promise<void>
+}) {
+  const [name,    setName]    = useState(initialName)
+  const [saving,  setSaving]  = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error,   setError]   = useState<string | null>(null)
+
+  async function handleSave() {
+    if (!name.trim()) return
+    setSaving(true); setError(null); setSuccess(false)
+    try {
+      await onSave(name.trim())
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Chatbot Name</CardTitle>
+        <CardDescription>
+          The name shown in your chat widget header and placeholder texts.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {error   && <p className="text-sm text-red-600">{error}</p>}
+        {success && <p className="text-sm text-green-600">Name saved.</p>}
+        <div className="flex gap-2">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="My Assistant"
+            maxLength={255}
+          />
+          <Button onClick={handleSave} disabled={!name.trim()} loading={saving}>
+            Save
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── API Key Card ─────────────────────────────────────────────────────────────
+
+const FREE_TOKEN_CAP     = 10_000
+const PRO_PLATFORM_CAP   = 200_000
 
 function ApiKeyCard({
   isSet,
+  plan,
+  monthlyTokenCap,
   onSave,
   onClear,
+  onUpdateCap,
 }: {
-  isSet:   boolean
-  onSave:  (key: string) => Promise<void>
-  onClear: () => Promise<void>
+  isSet:           boolean
+  plan:            'free' | 'pro'
+  monthlyTokenCap: number
+  onSave:          (key: string, tokenCap?: number) => Promise<void>
+  onClear:         () => Promise<void>
+  onUpdateCap:     (cap: number) => Promise<void>
 }) {
-  const [key,     setKey]     = useState('')
-  const [show,    setShow]    = useState(false)
-  const [saving,  setSaving]  = useState(false)
-  const [clearing, setClearing] = useState(false)
-  const [error,   setError]   = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const [key,        setKey]        = useState('')
+  const [show,       setShow]       = useState(false)
+  const [showOwnKey, setShowOwnKey] = useState(false)
+  const [newCap,     setNewCap]     = useState(String(monthlyTokenCap))
+  const [saving,     setSaving]     = useState(false)
+  const [clearing,   setClearing]   = useState(false)
+  const [savingCap,  setSavingCap]  = useState(false)
+  const [error,      setError]      = useState<string | null>(null)
+  const [success,    setSuccess]    = useState(false)
+
+  // Sync cap display when settings refresh
+  useEffect(() => { setNewCap(String(monthlyTokenCap)) }, [monthlyTokenCap])
+
+  const isPro            = plan === 'pro'
+  const usingPlatformKey = isPro && !isSet
 
   async function handleSave() {
     if (!key.trim()) return
     setSaving(true); setError(null); setSuccess(false)
     try {
-      await onSave(key.trim())
-      setKey('')
+      const cap = isPro ? (parseInt(newCap, 10) || PRO_PLATFORM_CAP) : undefined
+      await onSave(key.trim(), cap)
+      setKey(''); setShowOwnKey(false)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
@@ -75,71 +164,193 @@ function ApiKeyCard({
     }
   }
 
+  async function handleSaveCap() {
+    const parsed = parseInt(newCap, 10)
+    if (isNaN(parsed) || parsed < 1) { setError('Token limit must be a positive number'); return }
+    setSavingCap(true); setError(null)
+    try {
+      await onUpdateCap(parsed)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update limit')
+    } finally {
+      setSavingCap(false)
+    }
+  }
+
+  // ── Shared key input row ───────────────────────────────────────────────────
+  function KeyInput({ id }: { id: string }) {
+    return (
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Input
+            id={id}
+            type={show ? 'text' : 'password'}
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            placeholder="sk-..."
+            className="pr-9"
+          />
+          <button
+            type="button"
+            onClick={() => setShow((v) => !v)}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+          >
+            {show ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        </div>
+        <Button onClick={handleSave} disabled={!key.trim()} loading={saving}>Save</Button>
+      </div>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>OpenAI API Key</CardTitle>
-        <CardDescription>
-          Your key is encrypted at rest and never exposed in API responses.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Status badge */}
-        <div className="flex items-center gap-2">
-          {isSet ? (
-            <span className="inline-flex items-center gap-1.5 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
-              <CheckCircle2 size={14} />
-              Key is configured
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
-              <AlertCircle size={14} />
-              No key configured
-            </span>
-          )}
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle>OpenAI API Key</CardTitle>
+            <CardDescription className="mt-1.5">
+              {isPro
+                ? 'Use the Bentevi global key or bring your own for full control.'
+                : 'Your own OpenAI API key is required to activate your chatbot.'}
+            </CardDescription>
+          </div>
+          <span className={[
+            'flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold',
+            isPro
+              ? 'bg-brand-100 text-brand-700'
+              : 'bg-slate-100 text-slate-600',
+          ].join(' ')}>
+            {isPro ? 'Pro plan' : 'Free plan'}
+          </span>
         </div>
+      </CardHeader>
 
-        {/* Error */}
-        {error && (
-          <p className="text-sm text-red-600">{error}</p>
-        )}
-        {success && (
-          <p className="text-sm text-green-600">Key saved successfully.</p>
+      <CardContent className="space-y-4">
+        {error   && <p className="text-sm text-red-600">{error}</p>}
+        {success && <p className="text-sm text-green-600">Key saved successfully.</p>}
+
+        {/* ── Free plan ──────────────────────────────────────────────────────── */}
+        {!isPro && (
+          <>
+            <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 rounded-lg px-3 py-2.5">
+              <span className="font-medium text-slate-700">{FREE_TOKEN_CAP.toLocaleString()} tokens / month</span>
+              <span className="text-slate-300">·</span>
+              <span>Add your own key to activate your chatbot</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isSet ? (
+                <span className="inline-flex items-center gap-1.5 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
+                  <CheckCircle2 size={14} /> Key is configured
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
+                  <AlertCircle size={14} /> No key configured
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="api-key-free">{isSet ? 'Replace key' : 'Enter your OpenAI API key'}</Label>
+              <KeyInput id="api-key-free" />
+            </div>
+
+            {isSet && (
+              <Button variant="ghost" size="sm" onClick={handleClear} loading={clearing}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                Remove key
+              </Button>
+            )}
+          </>
         )}
 
-        {/* Input */}
-        <div className="space-y-1.5">
-          <Label htmlFor="api-key">{isSet ? 'Replace key' : 'Enter your OpenAI API key'}</Label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                id="api-key"
-                type={show ? 'text' : 'password'}
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                placeholder="sk-..."
-                className="pr-9"
-              />
+        {/* ── Pro — using platform key ───────────────────────────────────────── */}
+        {isPro && usingPlatformKey && (
+          <>
+            <div className="flex items-center gap-2.5 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
+              <CheckCircle2 size={14} className="flex-shrink-0" />
+              <span>Using the Bentevi global key — <strong>{PRO_PLATFORM_CAP.toLocaleString()} tokens / month</strong> included.</span>
+            </div>
+
+            {!showOwnKey ? (
               <button
                 type="button"
-                onClick={() => setShow((v) => !v)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                onClick={() => setShowOwnKey(true)}
+                className="text-sm text-brand-600 hover:text-brand-700 underline underline-offset-2"
               >
-                {show ? <EyeOff size={14} /> : <Eye size={14} />}
+                Add your own key instead
               </button>
-            </div>
-            <Button onClick={handleSave} disabled={!key.trim()} loading={saving}>
-              Save
-            </Button>
-          </div>
-        </div>
+            ) : (
+              <div className="space-y-3 border border-slate-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-slate-700">Use your own OpenAI key</p>
 
-        {/* Clear */}
-        {isSet && (
-          <Button variant="ghost" size="sm" onClick={handleClear} loading={clearing}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50">
-            Remove key
-          </Button>
+                <div className="space-y-1.5">
+                  <Label htmlFor="api-key-pro">API key</Label>
+                  <KeyInput id="api-key-pro" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="token-cap-new">Monthly token limit</Label>
+                  <Input
+                    id="token-cap-new"
+                    type="number"
+                    min={1}
+                    value={newCap}
+                    onChange={(e) => setNewCap(e.target.value)}
+                    className="w-48"
+                  />
+                  <p className="text-xs text-slate-400">How many tokens per month before the chatbot stops responding.</p>
+                </div>
+
+                <Button variant="outline" size="sm"
+                  onClick={() => { setShowOwnKey(false); setKey(''); setError(null) }}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Pro — own key active ───────────────────────────────────────────── */}
+        {isPro && !usingPlatformKey && (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
+                <CheckCircle2 size={14} /> Using your own key
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="api-key-replace">Replace key</Label>
+              <KeyInput id="api-key-replace" />
+            </div>
+
+            {/* Token cap editor */}
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="token-cap">Monthly token limit</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  id="token-cap"
+                  type="number"
+                  min={1}
+                  value={newCap}
+                  onChange={(e) => setNewCap(e.target.value)}
+                  className="w-48"
+                />
+                <Button variant="outline" size="sm" onClick={handleSaveCap} loading={savingCap}>
+                  Save limit
+                </Button>
+              </div>
+              <p className="text-xs text-slate-400">Tokens per month before the chatbot stops responding.</p>
+            </div>
+
+            {/* Switch back to platform key */}
+            <Button variant="ghost" size="sm" onClick={handleClear} loading={clearing}
+              className="text-slate-500 hover:text-slate-700 hover:bg-slate-100">
+              Switch to Bentevi global key (200k / month)
+            </Button>
+          </>
         )}
       </CardContent>
     </Card>
@@ -227,10 +438,9 @@ function ConfigCard({
 function EmbedCard({ projectId }: { projectId: string }) {
   const [copied, setCopied] = useState(false)
 
-  const apiUrl  = import.meta.env.VITE_API_URL  || 'http://localhost:3001'
+  const apiUrl    = import.meta.env.VITE_API_URL || 'http://localhost:3001'
   const widgetUrl = `${window.location.origin}/widget.js`
-
-  const script = `<script src="${widgetUrl}" data-project="${projectId}" data-api-url="${apiUrl}"><\/script>`
+  const script    = `<script src="${widgetUrl}" data-project="${projectId}" data-api-url="${apiUrl}"><\/script>`
 
   async function handleCopy() {
     await navigator.clipboard.writeText(script)
@@ -267,10 +477,126 @@ function EmbedCard({ projectId }: { projectId: string }) {
   )
 }
 
+// ─── Error Messages Card ──────────────────────────────────────────────────────
+
+const ERROR_MESSAGE_FIELDS: {
+  key:         keyof ErrorMessages
+  label:       string
+  description: string
+}[] = [
+  {
+    key:         'noKnowledge',
+    label:       'No knowledge',
+    description: 'Used when the AI cannot find relevant information in its knowledge base.',
+  },
+  {
+    key:         'blocked',
+    label:       'Blocked keyword',
+    description: 'Shown when the visitor\'s message matches a blocked keyword.',
+  },
+  {
+    key:         'rateLimited',
+    label:       'Rate limited',
+    description: 'Shown when the visitor sends too many messages in a short time.',
+  },
+  {
+    key:         'capExceeded',
+    label:       'Cap exceeded',
+    description: 'Shown when the project\'s monthly token limit has been reached.',
+  },
+  {
+    key:         'apiError',
+    label:       'API / server error',
+    description: 'Shown when the AI service fails or returns an unexpected error.',
+  },
+  {
+    key:         'default',
+    label:       'Default fallback',
+    description: 'Catch-all message shown for any other unhandled error.',
+  },
+]
+
+function ErrorMessagesCard({
+  initial,
+  onSave,
+}: {
+  initial: ErrorMessages
+  onSave:  (msgs: ErrorMessages) => Promise<void>
+}) {
+  const [msgs,    setMsgs]    = useState<ErrorMessages>(initial)
+  const [saving,  setSaving]  = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error,   setError]   = useState<string | null>(null)
+
+  function setField(key: keyof ErrorMessages, value: string) {
+    setMsgs((m) => ({ ...m, [key]: value }))
+  }
+
+  async function handleSave() {
+    setSaving(true); setError(null); setSuccess(false)
+    try {
+      await onSave(msgs)
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Error Messages</CardTitle>
+        <CardDescription>
+          Customise what your widget visitors see when something goes wrong. Leave a field blank to use the built-in default.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {error   && <p className="text-sm text-red-600">{error}</p>}
+        {success && <p className="text-sm text-green-600">Error messages saved.</p>}
+
+        {ERROR_MESSAGE_FIELDS.map(({ key, label, description }) => (
+          <div key={key} className="space-y-1.5">
+            <Label htmlFor={`em-${key}`}>{label}</Label>
+            <p className="text-xs text-slate-400">{description}</p>
+            <textarea
+              id={`em-${key}`}
+              rows={2}
+              maxLength={500}
+              value={msgs[key]}
+              onChange={(e) => setField(key, e.target.value)}
+              placeholder={DEFAULT_ERROR_MESSAGES[key]}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 placeholder:text-slate-400"
+            />
+            <p className="text-xs text-slate-400 text-right tabular-nums">
+              {msgs[key].length} / 500
+            </p>
+          </div>
+        ))}
+
+        <div className="flex justify-end pt-2">
+          <Button onClick={handleSave} loading={saving}>Save error messages</Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function SettingsPage() {
-  const qc = useQueryClient()
+  const qc   = useQueryClient()
+  const user = useAuthStore((s) => s.user)
+  const plan = (user?.plan ?? 'free') as 'free' | 'pro'
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = (searchParams.get('tab') ?? 'general') as SettingsTab
+
+  function switchTab(t: SettingsTab) {
+    setSearchParams(t === 'general' ? {} : { tab: t })
+  }
 
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: ['settings'],
@@ -287,16 +613,38 @@ export function SettingsPage() {
     onSuccess:  () => qc.invalidateQueries({ queryKey: ['settings'] }),
   })
 
-  async function saveKey(key: string) {
-    await updateMutation.mutateAsync({ openaiApiKey: key })
+  const projectNameMutation = useMutation({
+    mutationFn: (name: string) => api.patch<Project>('/api/projects/mine', { name }),
+    onSuccess:  () => qc.invalidateQueries({ queryKey: ['project'] }),
+  })
+
+  async function saveProjectName(name: string) {
+    await projectNameMutation.mutateAsync(name)
+  }
+
+  async function saveKey(key: string, tokenCap?: number) {
+    const body: Record<string, unknown> = { openaiApiKey: key }
+    if (tokenCap !== undefined) body.monthlyTokenCap = tokenCap
+    await updateMutation.mutateAsync(body)
   }
 
   async function clearKey() {
-    await updateMutation.mutateAsync({ openaiApiKey: null })
+    // Pro users switching back to the platform key → reset cap to 200k
+    const body: Record<string, unknown> = { openaiApiKey: null }
+    if (plan === 'pro') body.monthlyTokenCap = PRO_PLATFORM_CAP
+    await updateMutation.mutateAsync(body)
+  }
+
+  async function saveTokenCap(cap: number) {
+    await updateMutation.mutateAsync({ monthlyTokenCap: cap })
   }
 
   async function saveConfig(data: { openaiModel: string; systemMessage: string }) {
     await updateMutation.mutateAsync(data)
+  }
+
+  async function saveErrorMessages(msgs: ErrorMessages) {
+    await updateMutation.mutateAsync({ errorMessages: msgs })
   }
 
   if (settingsLoading || !settings) {
@@ -307,25 +655,71 @@ export function SettingsPage() {
     )
   }
 
+  const TABS: { id: SettingsTab; label: string }[] = [
+    { id: 'general',        label: 'General'        },
+    { id: 'error-messages', label: 'Error Messages' },
+  ]
+
   return (
-    <div className="max-w-2xl space-y-6">
-      <div>
+    <div className="max-w-2xl">
+
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <div className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
         <p className="text-sm text-slate-500 mt-1">Configure your AI assistant.</p>
       </div>
 
-      <ApiKeyCard
-        isSet={settings.openaiApiKeySet}
-        onSave={saveKey}
-        onClear={clearKey}
-      />
+      {/* ── Tab bar ─────────────────────────────────────────────────────────── */}
+      <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit mb-6">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => switchTab(t.id)}
+            className={[
+              'px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
+              tab === t.id
+                ? 'bg-white shadow-sm text-slate-900'
+                : 'text-slate-500 hover:text-slate-700',
+            ].join(' ')}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-      <ConfigCard
-        settings={settings}
-        onSave={saveConfig}
-      />
+      {/* ── General tab ─────────────────────────────────────────────────────── */}
+      {tab === 'general' && (
+        <div className="space-y-6">
+          {project && (
+            <ChatbotNameCard
+              initialName={project.name}
+              onSave={saveProjectName}
+            />
+          )}
+          <ApiKeyCard
+            isSet={settings.openaiApiKeySet}
+            plan={plan}
+            monthlyTokenCap={settings.monthlyTokenCap}
+            onSave={saveKey}
+            onClear={clearKey}
+            onUpdateCap={saveTokenCap}
+          />
+          <ConfigCard
+            settings={settings}
+            onSave={saveConfig}
+          />
+          {project && <EmbedCard projectId={project.id} />}
+        </div>
+      )}
 
-      {project && <EmbedCard projectId={project.id} />}
+      {/* ── Error Messages tab ───────────────────────────────────────────────── */}
+      {tab === 'error-messages' && (
+        <ErrorMessagesCard
+          initial={mergeErrorMessages(settings.errorMessages)}
+          onSave={saveErrorMessages}
+        />
+      )}
+
     </div>
   )
 }
