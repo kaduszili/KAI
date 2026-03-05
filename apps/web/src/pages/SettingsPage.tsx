@@ -438,7 +438,7 @@ function ConfigCard({
 function EmbedCard({ projectId }: { projectId: string }) {
   const [copied, setCopied] = useState(false)
 
-  const apiUrl    = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+  const apiUrl    = import.meta.env.VITE_API_URL ?? ''
   const widgetUrl = `${window.location.origin}/widget.js`
   const script    = `<script src="${widgetUrl}" data-project="${projectId}" data-api-url="${apiUrl}"><\/script>`
 
