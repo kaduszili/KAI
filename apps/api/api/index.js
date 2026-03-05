@@ -26639,9 +26639,15 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 var client = src_default(process.env.DATABASE_URL, {
-  max: 10,
+  prepare: false,
+  // required for Supabase transaction pooler
+  ssl: "require",
+  // required for Supabase
+  max: 2,
+  // serverless: keep connection pool small
   idle_timeout: 20,
-  connect_timeout: 10
+  connect_timeout: 30
+  // allow time for cold starts
 });
 var db = drizzle(client, { schema: schema_exports });
 
@@ -36344,7 +36350,7 @@ app.onError((err, c2) => {
 var app_default = app;
 
 // api/_handler.ts
-var config = { runtime: "nodejs", maxDuration: 30 };
+var config = { runtime: "nodejs", maxDuration: 60 };
 var handler_default = handle(app_default);
 export {
   config,
