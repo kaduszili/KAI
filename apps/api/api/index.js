@@ -26643,8 +26643,8 @@ if (!process.env.DATABASE_URL) {
 var client = src_default(process.env.DATABASE_URL, {
   prepare: false,
   // required for Supabase transaction pooler
-  ssl: "require",
-  // required for Supabase
+  ssl: { rejectUnauthorized: false },
+  // SSL without cert verification (required for PgBouncer/Supabase)
   max: 2,
   // serverless: keep connection pool small
   idle_timeout: 20,
