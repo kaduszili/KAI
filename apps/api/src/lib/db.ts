@@ -8,10 +8,11 @@ if (!process.env.DATABASE_URL) {
 
 const client = postgres(process.env.DATABASE_URL, {
   prepare: false,       // required for Supabase transaction pooler
-  ssl: 'require',       // required for Supabase
   max: 2,               // serverless: keep connection pool small
   idle_timeout: 20,
   connect_timeout: 30,  // allow time for cold starts
+  // SSL is handled via ?sslmode=require in DATABASE_URL — avoids tls.createSecureContext()
+  // being called at module init time which hangs the Vercel cold start
 })
 
 export const db = drizzle(client, { schema })
