@@ -35650,8 +35650,7 @@ var openai_default = OpenAI;
 // src/lib/logger.ts
 var import_pino = __toESM(require_pino(), 1);
 var logger2 = (0, import_pino.default)({
-  level: process.env.NODE_ENV === "production" ? "info" : "debug",
-  transport: process.env.NODE_ENV !== "production" ? { target: "pino-pretty", options: { colorize: true } } : void 0
+  level: process.env.LOG_LEVEL ?? (process.env.NODE_ENV === "production" ? "info" : "debug")
 });
 
 // src/services/RateLimiterService.ts
